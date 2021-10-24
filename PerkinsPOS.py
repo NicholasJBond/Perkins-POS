@@ -1,8 +1,9 @@
 import sqlite3
 
+
 conn = sqlite3.connect('PerkinPOSDatabase')
 c = conn.cursor()
-c.execute('CREATE TABLE IF NOT EXISTS allItemsAndCodes(barcode TEXT, description TEXT, price REAL, priceIncrement REAL, quantityInStock REAL)') 
+c.execute('CREATE TABLE IF NOT EXISTS allItemsAndCodes(barcode TEXT, description TEXT, price REAL, priceIncrement INT, quantityInStock REAL)') 
 
 barcodeEntry = "0"
 descriptionEntry = "0"
@@ -19,6 +20,14 @@ lineInput = 0
 loginLoop = 1
 mainLoop = 0
 
+
+
+
+
+
+
+##Functions
+
 def searchForItem(bcode):
     c.execute('SELECT description FROM allItemsAndCodes WHERE barcode=?;',[bcode])
     descriptionEntry=c.fetchone()
@@ -34,7 +43,8 @@ def searchForItem(bcode):
 
         c.execute('SELECT priceIncrement FROM allItemsAndCodes WHERE barcode=?;',[bcode])
         priceIncrementEntry=c.fetchone()
-
+        priceIncrementEntry=int(priceIncrementEntry[0])
+        
         if (priceIncrementEntry == 0):
             itemType = "per kg"
         else:
@@ -59,73 +69,256 @@ def newItem():
                                   (barcodeEntry, descriptionEntry, priceEntry, priceIncrementEntry, quantityInStockEntry))
     conn.commit()
     print(descriptionEntry + " with an access code of " + barcodeEntry + " has successfully been added to the database with a price of $" + priceEntry + " per increment.")
+    conn.commit()
+    print("------+++++------+++++------+++++------+++++------+++++------")
+
+
+
+
+
                         
 def changePrice():
     lineInput = input("Barcode:")
     
+
+    
+    barcodePlaceholder = lineInput
     c.execute('SELECT price FROM allItemsAndCodes WHERE barcode=?', [lineInput])
     priceEntry = c.fetchone()
-    priceEntry = str(priceEntry[0])
-    
-    c.execute('SELECT description FROM allItemsAndCodes WHERE barcode=?', [lineInput])
-    descriptionEntry = c.fetchone()
-    descriptionEntry = str(descriptionEntry[0])
-    
-    c.execute('SELECT priceIncrement FROM allItemsAndCodes WHERE barcode=?;',[lineInput])
-    priceIncrementEntry=c.fetchone()
-    priceIncrementEntry=priceIncrementEntry[0]
-    
-    if (priceIncrementEntry == 0):
-            itemType = "per kg"
+    if (priceEntry == None):
+        print("Barcode Not Found")
     else:
+        priceEntry = str(priceEntry[0])
+            
+        c.execute('SELECT description FROM allItemsAndCodes WHERE barcode=?', [lineInput])
+        descriptionEntry = c.fetchone()
+        descriptionEntry = str(descriptionEntry[0])
+            
+        c.execute('SELECT priceIncrement FROM allItemsAndCodes WHERE barcode=?;',[lineInput])
+        priceIncrementEntry=c.fetchone()
+        priceIncrementEntry=int(priceIncrementEntry[0])
+            
+            
+        if (priceIncrementEntry == 0):
+            itemType = "per kg"
+        else:
             itemType = "each"
 
+                    
+        print("The current price for " + descriptionEntry + " is $" + priceEntry + " " + itemType)
+        print("What did you want to change it to?")
+        lineInput = float(input("$"))
+           
+        c.execute('SELECT * FROM allItemsAndCodes WHERE barcode=?', [barcodePlaceholder])
             
-    print("The current price for " + descriptionEntry + " is $" + priceEntry + " " + itemType)
-    print("What did you want to change it to?")
-    lineInput = input("$")
-    c.execute('UPDATE allItemsAndCodes SET price = ?',[lineInput])
-    print('Success')
+        c.execute('UPDATE allItemsAndCodes SET price = ? WHERE barcode=?', (lineInput, barcodePlaceholder))
+        conn.commit()
+        print('Success')
+            
+    conn.commit()
+    print("------+++++------+++++------+++++------+++++------+++++------")
+
+
+
+
+
+
+
+
 
 def changeQuantity():
     lineInput = input("Barcode:")
     
+    
     c.execute('SELECT  quantityInStock FROM allItemsAndCodes WHERE barcode=?', [lineInput])
     quantityInStockEntry = c.fetchone()
-    quantityInStockEntry = str(quantityInStockEntry[0])
-    
-    c.execute('SELECT description FROM allItemsAndCodes WHERE barcode=?', [lineInput])
-    descriptionEntry = c.fetchone()
-    descriptionEntry = str(descriptionEntry[0])
+    if (quantityInStockEntry == None):
+        print("Barcode Not Found")
 
+    else:
+        quantityInStockEntry = str(quantityInStockEntry[0])
+        barcodePlaceholder = lineInput
+        
+        
+        c.execute('SELECT description FROM allItemsAndCodes WHERE barcode=?', [lineInput])
+        descriptionEntry = c.fetchone()
+        descriptionEntry = str(descriptionEntry[0])
+
+        c.execute('SELECT priceIncrement FROM allItemsAndCodes WHERE barcode=?;',[lineInput])
+        priceIncrementEntry=c.fetchone()
+        priceIncrementEntry=int(priceIncrementEntry[0])
+
+        
+            
+        if (priceIncrementEntry == 0):
+            itemType = "kg"
+            
+        else:
+            itemType = ""
+            
+            
+            if (quantityInStockEntry == None):
+                quantityInStockEntry = "0"
+            else:
+                
+                
+                quantityInStockEntry = str(quantityInStockEntry)
+            
+                
+        print(quantityInStockEntry + itemType + " of " + descriptionEntry + " in stock")
+        
+        lineInput = input("cl/02/02~:")
+        
+
+        if (lineInput == "00"):
+            lineInput = input("How many " + descriptionEntry + " in stock? :")
+            
+            c.execute('UPDATE allItemsAndCodes SET quantityInStock = ? WHERE barcode = ?',[lineInput, barcodePlaceholder])
+            conn.commit
+            print('Success! Returning to cl~')
+            
+
+        elif (lineInput == "01"):
+            lineInput = input("How many new " + descriptionEntry + " are there? :")
+            
+            
+            c.execute('UPDATE allItemsAndCodes SET quantityInStock = ? WHERE barcode = ?',[str(float(lineInput)+float(quantityInStockEntry)), barcodePlaceholder])
+            conn.commit
+            print('Success! Returning to cl~')
+
+        else:
+            print("No changes made. Returning to cl~")
+            
+    conn.commit()
+    print("------+++++------+++++------+++++------+++++------+++++------")
+    
+
+
+
+
+
+def delData():
+    print("No changes made. Returning to cl~")
+    conn.commit()
+    print("------+++++------+++++------+++++------+++++------+++++------")
+
+
+def checkStock():
+    lineInput = input("cl/02/05~:")
+    if (lineInput == "00"):
+        
+       
+        
 
             
-    print(quantityInStockEntry + " of " + descriptionEntry + " in stock")
-    
-    lineInput = input(":")
+        c.execute('SELECT * FROM allItemsAndCodes')
 
-    if (lineInput == "00"):
-        lineInput = input("How many " + descriptionEntry + " in stock? :")
-        
-        c.execute('UPDATE allItemsAndCodes SET quantityInStock = ?',[lineInput])
-        print('Success! Returning to cl~')
+        print("------+++++------+++++------+++++------+++++------+++++------")
+        print("---All Items and Stock---")
+        for row in c.fetchall():
+            
+            if (row[3] == 0):
+                itemType = "kg"
+            else:
+                itemType = ""
+            print(str(row[1]) + ":")
+            print(str(row[4]) + str(itemType))
+            print("")
+
+            
+         
 
     elif (lineInput == "01"):
-        lineInput = input("How many new " + descriptionEntry + " are there? :")
-        
-        
-        c.execute('UPDATE allItemsAndCodes SET quantityInStock = ?',[lineInput+quantityInStock])
-        print('Success! Returning to cl~')
+        lineInput = input("Barcode:")
+    
+    
+        c.execute('SELECT  quantityInStock FROM allItemsAndCodes WHERE barcode=?', [lineInput])
+        quantityInStockEntry = c.fetchone()
+        if (quantityInStockEntry == None):
+            print("Barcode Not Found")
+
+        else:
+            quantityInStockEntry = str(quantityInStockEntry[0])
+            barcodePlaceholder = lineInput
+            
+            
+            c.execute('SELECT description FROM allItemsAndCodes WHERE barcode=?', [lineInput])
+            descriptionEntry = c.fetchone()
+            descriptionEntry = str(descriptionEntry[0])
+
+            c.execute('SELECT priceIncrement FROM allItemsAndCodes WHERE barcode=?;',[lineInput])
+            priceIncrementEntry=c.fetchone()
+            priceIncrementEntry=int(priceIncrementEntry[0])
+
+            
+                
+            if (priceIncrementEntry == 0):
+                itemType = "kg"
+                
+            else:
+                itemType = ""
+                
+                
+                if (quantityInStockEntry == None):
+                    quantityInStockEntry = "0"
+                else:
+                    
+                    
+                    quantityInStockEntry = str(quantityInStockEntry)
+                
+                    
+            print(quantityInStockEntry + itemType + " of " + descriptionEntry + " in stock")
 
     else:
         print("No changes made. Returning to cl~")
+        
     
+
+    conn.commit()
+    print("------+++++------+++++------+++++------+++++------+++++------")
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 #Login
 print("Welcome To Perkins POS")
 while (loginLoop == 1):
+    conn = sqlite3.connect('PerkinPOSDatabase')
+    c = conn.cursor()
     lineInput = input("Login:")
     if (lineInput == "010209"):
         print("------+++++------+++++------+++++------+++++------+++++------")
@@ -152,20 +345,28 @@ while (loginLoop == 1):
 
            
                     print("Help Page:")
-                    print("Commands:")
-                    print("logout - logs out of your session")
-                    print("new - creates a new item")
-                    print("change price - changes the price of an item in the database")
-                    print("change qty - changes the quantity of an item in the database")
+                    print("cl~:")
+                    print("00 - Log Out")
+                    print("01 - Help Page")
+                    print("02 - Edit database")
+                    print("03 - Manager menu")
+                    print("cl/02~:")
+                    print("00 - new entry")
+                    print("01 - change price")
+                    print("02 - change quantity in stock")
+                    print("03 - change description")
+                    print("04 - change pricing type")
+                    print("05 - check stock")
+                    print("------+++++------+++++------+++++------+++++------+++++------")
 
 
 
 
 
-##Edit database meny
+##Edit database menu
                     
             elif (lineInput == "02"):
-                lineInput = input("Action:")
+                lineInput = input("cl/02~:")
                 if (lineInput == "00"):
                     newItem()
                             
@@ -180,6 +381,13 @@ while (loginLoop == 1):
                     print("No changes made. Returning to cl~")
 
                 elif (lineInput == "04"):
+                    print("Delete Item")
+                    print("No changes made. Returning to cl~")
+                    
+                elif (lineInput == "05"):
+                    checkStock()
+                    
+                elif (lineInput == "06"):
                     print("Delete Item")
                     print("No changes made. Returning to cl~")
 
@@ -220,7 +428,7 @@ while (loginLoop == 1):
 
             
     elif (lineInput == "00"):
-        exit()
+        
         loginLoop = 0
         
         
@@ -228,6 +436,8 @@ while (loginLoop == 1):
     else:
             
         print("XXXXXX")
+
+print("Thank You for using Perkins POS")
 
     
 
