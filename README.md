@@ -1,2 +1,2 @@
 # Perkins-POS
- This is a POS system that 
+ Command Line based Point of Sale software
