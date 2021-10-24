@@ -202,6 +202,51 @@ def delData():
     conn.commit()
     print("------+++++------+++++------+++++------+++++------+++++------")
 
+def changeDescription():
+    lineInput = input("Barcode:")
+    
+
+    
+    barcodePlaceholder = lineInput
+    c.execute('SELECT description FROM allItemsAndCodes WHERE barcode=?', [lineInput])
+    descriptionEntry = c.fetchone()
+    if (descriptionEntry == None):
+        print("Barcode Not Found")
+    else:
+        descriptionEntry = str(descriptionEntry[0])
+            
+        c.execute('SELECT price FROM allItemsAndCodes WHERE barcode=?', [lineInput])
+        priceEntry = c.fetchone()
+        priceEntry = str(priceEntry[0])
+            
+        c.execute('SELECT priceIncrement FROM allItemsAndCodes WHERE barcode=?;',[lineInput])
+        priceIncrementEntry=c.fetchone()
+        priceIncrementEntry=int(priceIncrementEntry[0])
+            
+            
+        if (priceIncrementEntry == 0):
+            itemType = "per kg"
+        else:
+            itemType = "each"
+
+                    
+        print("The current price for " + descriptionEntry + " is $" + str(priceEntry) + " " + itemType)
+        print("What did you want to rename it to??")
+        lineInput = str(input(":"))
+           
+        c.execute('SELECT * FROM allItemsAndCodes WHERE barcode=?', [barcodePlaceholder])
+            
+        c.execute('UPDATE allItemsAndCodes SET description = ? WHERE barcode=?', (lineInput, barcodePlaceholder))
+        conn.commit()
+        print('Success')
+            
+    conn.commit()
+    print("------+++++------+++++------+++++------+++++------+++++------")
+
+
+
+
+
 
 def checkStock():
     lineInput = input("cl/02/05~:")
@@ -377,8 +422,7 @@ while (loginLoop == 1):
                     changeQuantity()
 
                 elif (lineInput == "03"):
-                    print("Change Description")
-                    print("No changes made. Returning to cl~")
+                    changeDescription()
 
                 elif (lineInput == "04"):
                     print("Delete Item")
