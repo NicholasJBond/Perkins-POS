@@ -442,6 +442,7 @@ def checkStock():
 
 
 
+
     conn.commit()
     print("------+++++------+++++------+++++------+++++------+++++------")
 
@@ -488,7 +489,7 @@ while (loginLoop == 1):
     conn = sqlite3.connect('PerkinPOSDatabase')
     c = conn.cursor()
     lineInput = input("Login:")
-    if (lineInput == "010209"):
+    if (lineInput == "1111"):
         print("------+++++------+++++------+++++------+++++------+++++------")
         #Search
         mainLoop = 1
@@ -511,20 +512,11 @@ while (loginLoop == 1):
 ##Help menu
             elif(lineInput == "01"):
 
+                    helpList = open('helpPage.txt', 'r')
 
-                    print("Help Page:")
-                    print("cl~:")
-                    print("00 - Log Out")
-                    print("01 - Help Page")
-                    print("02 - Edit database")
-                    print("03 - Manager menu")
-                    print("cl/02~:")
-                    print("00 - new entry")
-                    print("01 - change price")
-                    print("02 - change quantity in stock")
-                    print("03 - change description")
-                    print("04 - change pricing type")
-                    print("05 - check stock")
+                    print(helpList.read())
+                    
+                  
                     print("------+++++------+++++------+++++------+++++------+++++------")
 
 
@@ -569,7 +561,9 @@ while (loginLoop == 1):
 
            ##Manager Menu
             elif (lineInput == "03"):
-                print("Manager Menu")
+                print("Manager Menu - coming soon")
+                print("No changes made. Returning to cl~")
+                print("------+++++------+++++------+++++------+++++------+++++------")
 
 
 
