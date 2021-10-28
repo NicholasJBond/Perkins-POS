@@ -1,9 +1,9 @@
 import sqlite3
-
+from tabulate import tabulate
 
 conn = sqlite3.connect('PerkinPOSDatabase')
 c = conn.cursor()
-c.execute('CREATE TABLE IF NOT EXISTS allItemsAndCodes(barcode TEXT, description TEXT, price REAL, priceIncrement INT, quantityInStock REAL)')
+c.execute('CREATE TABLE IF NOT EXISTS allItemsAndCodes(barcode TEXT, description TEXT, price REAL, priceIncrement INT, quantityInStock REAL, itemType INT)')
 
 barcodeEntry = "0"
 descriptionEntry = "0"
@@ -11,22 +11,24 @@ priceEntry = 0
 priceIncrementEntry = 0
 quantityInStockEntry = 0
 
-priceTotalList = [0]
-barcodeList = [0]
-quantityList = [0]
-itemType = "0"
+shoppingCart = []
+global priceTotal
+priceTotal = [0]
+quantityTotal = [0]
+global itemType
 
 lineInput = 0
 loginLoop = 1
 mainLoop = 0
 
+itemTypeArray = ["Fruit", "Vegetable", "Value Pack"]
 
 
 
 
 
 
-##Functions
+
 
 def check_float(potential_float):
     try:
@@ -50,26 +52,49 @@ def searchForItem(bcode):
 
     else:
 
+        c.execute('SELECT * FROM allItemsAndCodes WHERE barcode = ?', [bcode])
+        row=c.fetchall()
+        row=row[0]
+        
+        if (row[3] == 0):
+            lineInput = input("Enter the weight in kilograms:")
+            if check_float(lineInput) == True:
 
-        c.execute('SELECT price FROM allItemsAndCodes WHERE barcode=?;',[bcode])
-        priceEntry=c.fetchone()
+                priceTotal.append(float(row[2])*float(lineInput))
+                quantityTotal.append(float(lineInput))
+                priceEntry=row[2]*float(lineInput)
+                shoppingCart.append([str(row[1]), "$"+str(priceEntry), str(lineInput)])
 
-        c.execute('SELECT priceIncrement FROM allItemsAndCodes WHERE barcode=?;',[bcode])
-        priceIncrementEntry=c.fetchone()
-        priceIncrementEntry=int(priceIncrementEntry[0])
+            else:
+                print("Not a valid weight - Returning to cl~:")
 
-        if (priceIncrementEntry == 0):
-            itemType = "per kg"
         else:
-            itemType = "each"
+            
+            priceTotal.append(row[2])
+            quantityTotal.append(1)
+            shoppingCart.append([str(row[1]), "$"+str(row[2]), str(1)])
 
-        priceTotalList.append(priceEntry)
-        barcodeList.append(bcode)
+        head = ["Description", "Price", "Quantity"]
+        
+        
+        print(tabulate(shoppingCart, headers= head, tablefmt="fancy_grid", showindex=True))
 
-        print("1x " + str(descriptionEntry[0]) + " at $" + str(priceEntry[0]) + " " + itemType)
 
 
 
+        
+def payForItem():
+    global shoppingCart
+    global priceTotal
+    a=sum(priceTotal)
+    print(a)
+    head = ["Description", "Price", "Quantity"]
+    shoppingCart.append(["", "", ""])
+    shoppingCart.append(["Total:", "$"+str(a), ""])
+    print(tabulate(shoppingCart, headers= head, tablefmt="fancy_grid"))
+    
+    shoppingCart=[]
+    priceTotal=[]
 
 
 
@@ -106,9 +131,13 @@ def newItem():
 def delData():
     
     lineInput=input("Barcode:")
-
-    c.execute('DELETE FROM allItemsAndCodes WHERE barcode =?', [lineInput])
-    print("Success")
+    if (descriptionEntry == None):
+        print("Barcode Not Found")
+    else:
+        descriptionEntry = str(descriptionEntry[0])
+        c.execute('DELETE FROM allItemsAndCodes WHERE barcode =?', [lineInput])
+        print("Success")
+    
 
 
 
@@ -373,25 +402,46 @@ def changeIncrement():
 
 def checkStock():
     lineInput = input("cl/02/05~:")
+    itemsInfo = []
+    head = ["Description", "Barcode", "Price", "Quantity In Stock", "Price Increment", "Item Type"]
+
+
+
+
+
     if (lineInput == "00"):
 
-
-
-
-
-        c.execute('SELECT * FROM allItemsAndCodes')
-
+        
         print("------+++++------+++++------+++++------+++++------+++++------")
         print("---All Items and Stock---")
-        for row in c.fetchall():
 
-            if (row[3] == 0):
-                itemType = "kg"
+        print(c.execute('SELECT description FROM allItemsAndCodes ORDER BY description ASC'))
+        c.execute('SELECT * FROM allItemsAndCodes')
+
+       
+
+        for row in c.fetchall():
+            if(row[3]==0):
+                priceIncrementEntry = "per kg"
             else:
-                itemType = ""
-            print(str(row[1]) + ":")
-            print(str(row[4]) + str(itemType))
-            print("")
+                priceIncrementEntry = "each"
+
+            for i in range(15):
+
+                if(row[5]==i):
+                    itemType =itemTypeArray[i]
+
+
+            
+            itemsInfo.append([row[1], row[0], "$"+str(row[2]), row[4], priceIncrementEntry, itemType])
+        
+            
+        
+
+            
+            
+        print(tabulate(itemsInfo, headers=head, tablefmt="fancy_grid", showindex=True))
+
 
 
 
@@ -400,42 +450,72 @@ def checkStock():
         lineInput = input("Barcode:")
 
 
-        c.execute('SELECT  quantityInStock FROM allItemsAndCodes WHERE barcode=?', [lineInput])
-        quantityInStockEntry = c.fetchone()
+        c.execute('SELECT  * FROM allItemsAndCodes WHERE barcode=?', [lineInput])
+        quantityInStockEntry = c.fetchall()
         if (quantityInStockEntry == None):
             print("Barcode Not Found")
 
         else:
-            quantityInStockEntry = str(quantityInStockEntry[0])
-            barcodePlaceholder = lineInput
-
-
-            c.execute('SELECT description FROM allItemsAndCodes WHERE barcode=?', [lineInput])
-            descriptionEntry = c.fetchone()
-            descriptionEntry = str(descriptionEntry[0])
-
-            c.execute('SELECT priceIncrement FROM allItemsAndCodes WHERE barcode=?;',[lineInput])
-            priceIncrementEntry=c.fetchone()
-            priceIncrementEntry=int(priceIncrementEntry[0])
-
-
-
-            if (priceIncrementEntry == 0):
-                itemType = "kg"
-
-            else:
-                itemType = ""
-
-
-                if (quantityInStockEntry == None):
-                    quantityInStockEntry = "0"
+            c.execute('SELECT  * FROM allItemsAndCodes WHERE barcode=?', [lineInput])
+            for row in c.fetchall():
+                if(row[3]==0):
+                    priceIncrementEntry = "per kg"
                 else:
+                    priceIncrementEntry = "each"
+
+                for i in range(15):
+
+                    if(row[5]==i):
+                        itemType =itemTypeArray[i]
 
 
-                    quantityInStockEntry = str(quantityInStockEntry)
+            
+            itemsInfo.append([row[1], row[0], "$"+str(row[2]), row[4], priceIncrementEntry, itemType])
+        
+            
+        
+
+            
+            
+        print(tabulate(itemsInfo, headers=head, tablefmt="fancy_grid", showindex=True))
 
 
-            print(quantityInStockEntry + itemType + " of " + descriptionEntry + " in stock")
+
+
+
+
+        
+    elif (lineInput == "02"):
+        
+        lineInput = input("Type of stock:")
+
+        c.execute('SELECT * FROM allItemsAndCodes WHERE ItemType =?', [lineInput])
+
+        for row in c.fetchall():
+            if(row[3]==0):
+                priceIncrementEntry = "per kg"
+            else:
+                priceIncrementEntry = "each"
+
+            for i in range(15):
+
+                if(row[5]==i):
+                    itemType =itemTypeArray[i]
+
+
+            
+            itemsInfo.append([row[1], row[0], "$"+str(row[2]), row[4], priceIncrementEntry, itemType])
+        
+            
+        
+
+            
+            
+        print(tabulate(itemsInfo, headers=head, tablefmt="fancy_grid", showindex=True))
+
+
+
+
 
     else:
         print("No changes made. Returning to cl~")
@@ -564,6 +644,9 @@ while (loginLoop == 1):
                 print("Manager Menu - coming soon")
                 print("No changes made. Returning to cl~")
                 print("------+++++------+++++------+++++------+++++------+++++------")
+
+            elif (lineInput == "04"):
+                payForItem()
 
 
 

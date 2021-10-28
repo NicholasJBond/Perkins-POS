@@ -1,7 +1,7 @@
 # Perkins-POS
  Command Line based Point of Sale software.
 
- Current Version: PerkinsPOSTest-1.2.1
+ Current Version: PerkinsPOSTest-1.2.3
 
 This Software is still in it's testing stage. 
 

@@ -16,3 +16,14 @@ Help Page:
 
 
 xxxxxxxx - scans a barcode
+
+DB variable list:
+
+Price increment
+	- 0 = per kg
+	- 1 = per each
+
+Item Type:
+	- 0 = Fruit
+	- 1 = Vegetables
+	- 2 = Value Packs
