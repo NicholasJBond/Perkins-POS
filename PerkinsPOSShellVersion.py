@@ -44,7 +44,7 @@ def check_float(potential_float):
 
 
 def searchForItem(bcode):
-    c.execute('SELECT description FROM allItemsAndCodes WHERE barcode=?;',[bcode])
+    c.execute('SELECT description FROM allItemsAndCodes WHERE barcode=?',[bcode])
     descriptionEntry=c.fetchone()
 
     if (descriptionEntry == None):

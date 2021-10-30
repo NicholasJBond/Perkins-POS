@@ -1,21 +1,14 @@
-Help Page:
-00 - Logout
-01 - This help page
+The ONE and ONLY Help Page:
+
+00 - Logs you out
+01 - The ONE and ONLY Help Page
 02 - Edit Database
-	> 00 - create entry
-	> 01 - delete entry
-	> 02 - change barcode
-	> 03 - change description
-	> 04 - change price
-	> 05 - change quantity in stock
-	> 06 - change price type(per kg or per item
-	> 07 - check quantity in stock
-		+ 00 - show amount of stock for all items
-		+ 01 - show amount of stock for specific barcode
-03 - Manager menu
+[xxxxxxxxxx] - scan any barcode you want!
 
 
-xxxxxxxx - scans a barcode
+If ever something stops working or you want to cancel, press the escape key.
+
+
 
 DB variable list:
 
