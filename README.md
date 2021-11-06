@@ -1,13 +1,15 @@
 # Perkins-POS
  Command Line based Point of Sale software.
 
- Current Version: PerkinsPOSTest-1.3.1
+ Current Version: PerkinsPOSTest-1.3.2
 
 
 
  Uptades:
- - Added another file which has a tkinter interface - does not come with same functionality as python shell program.
- - Renamed python files.
+ - Added other features into the tkinter app:
+    - add barcode
+    - delete barcode
+
 
 
 !!!This Software is still in it's testing stage!!! 

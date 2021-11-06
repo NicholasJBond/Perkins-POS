@@ -13,7 +13,7 @@ c.execute('CREATE TABLE IF NOT EXISTS allItemsAndCodes(barcode TEXT, description
 #Variables
 companyName = "Perkin's POS"
 state = "00"
-itemTypeArray = ["Fruit", "Vegetable", "Value Pack"]
+itemTypeArray = ["Undefined", "Vegetable", "Value Pack", "Fruit"]
 cartPrice = []
 cartQuantity = []
 cart = []
@@ -21,14 +21,17 @@ barcodeHolder = 0
 
 #Tk window
 root = Tk()
-root.title("PerkinsPOSTest-1.3.1")
-root.geometry('400x600')
+root.title("PerkinsPOSTest-1.3.2")
+root.geometry('825x900')
 
 #Tk Widgets
-inputEntry = Entry(root, width=60)
+inputEntry = Entry(root, width=89)
 inputEntry.pack()
 
-textOutput = Text(root, width=60, height=50)
+
+
+
+textOutput = Text(root, width=115, height=65)
 
 textOutput.pack()
 
@@ -49,7 +52,7 @@ def check_float(potential_float):
 
 
 def endLine():
-    textOutput.insert(1.0, "+--------------======+"+companyName+"+======--------------+\n")
+    textOutput.insert(1.0, "+------------======+======+======+======+======+--+"+companyName+"+--+======+======+======+======+======------------+\n")
 
 def printText(text):
     textOutput.config(state=NORMAL)
@@ -69,7 +72,13 @@ def search(barcode):
     
     global state
     if (dbFetch == None):
-        printText("Barcode not on file; Please try again\nType 'help' and then hit enter to show a list of\ncommands")
+        if (state == "001"):
+            printText("Welcome to Perkin's POS :)\nScan a barcode to begin invoice")
+            state = "01"
+
+        else:
+
+            printText("Barcode not on file; Please try again\nType 'help' and then hit enter to show a list of\ncommands")
 
     else:
         c.execute("SELECT * FROM allItemsAndCodes WHERE barcode =?", [barcode])
@@ -97,14 +106,15 @@ def search(barcode):
 
 
 def getInput(self):
-    
+    global priceIncrementEntry
     global state
     global dbFetch
     global barcodeHolder
     entryInput = inputEntry.get()
     inputEntry.delete(0, END)
     print(state)
-    
+    if (state == "001"):
+        state = "01"
 
     if (state == "00"):
         printText("Enter your login number\nHint: 010209")
@@ -112,7 +122,7 @@ def getInput(self):
             exit()
 
         elif (entryInput == "010209"):
-            state = "01"
+            state = "001"
             printText("Login Successful\nType 'help' and then enter to show a list of commands")
             
 
@@ -161,8 +171,7 @@ def getInput(self):
             if (entryInput != None):
                 barcodeHolder = entryInput
                 search(entryInput)
-            else:
-                printText("Please try again")
+            
             
 
     elif (state == "0102"):
@@ -181,13 +190,24 @@ def getInput(self):
             printText("Operation canceled\nPress <enter> to continue")
         
         if (entryInput == "01"):
-            state = "01"
-            printText("Create Entry\nWoopsy That feature is not in the GUI\nTry PerkinsPOSShellVersion.py")
+            state = "01020101"
+            printText("Enter barcode of the new item")
+            
 
+            
+            
+            
+            
 
         if (entryInput == "02"):
-            state = "01"
-            printText("Delete Entry\nWoopsy That feature is not in the GUI\nTry PerkinsPOSShellVersion.py")
+            state = "01020201"
+            printText("Delete>>")
+            
+    
+
+
+
+
         
 
         if (entryInput == "03"):
@@ -222,14 +242,115 @@ def getInput(self):
         if (entryInput == "09"):
             state = "01"
             printText("Show Database\nWoopsy That feature is not in the GUI\nTry PerkinsPOSShellVersion.py")
+            printText("---All Items and Stock---")
+            c.execute('SELECT * FROM allItemsAndCodes')
+        
+
+            head = ["Description", "Barcode", "Price", "Quantity In Stock", "Price Increment", "Item Type"]
+            global itemsInfo
+            itemsInfo = []
+
+
+            for row in c.fetchall():
+                if(row[3]==0):
+                    priceIncrementEntry = "per kg"
+                else:
+                    priceIncrementEntry = "each"
+
+                for i in range(15):
+
+                    if(row[5]==i):
+                        itemType =itemTypeArray[i]
+
+
+                
+                itemsInfo.append([row[1], row[0], "$"+str(row[2]), row[4], priceIncrementEntry, itemType,])
+            printText(tabulate(itemsInfo, headers=head, tablefmt="fancy_grid", showindex=True))
+        
+        if (entryInput == "10"):
+            state = "01"
+            conn.commit()
+            printText("Conn is committed>>state is 01. Scan a barcode to continue")
+
+
+        
+        
+
+            
+            
+        
+
+    elif (state == "01020101"):
+        global barcodeEntry
+        barcodeEntry = entryInput
+        state = "01020102"
+
+        printText("Enter the description of the new item")
+
+
+    elif (state == "01020102"):
+        global descriptionEntry
+        descriptionEntry = entryInput
+        state = "01020103"
+        printText("Enter the price of the new item")
+
+    elif (state == "01020103"):
+        global priceEntry
+        if (check_float(entryInput) == True):
+            priceEntry = entryInput
+            state = "01020104"
+            printText("If measured in kilograms enter 0, if measured per item enter 1")
+
+        else:
+            printText("Do not use a $ sign when entering price. Press escape to cancel")
+
+    elif (state == "01020104"):
+
+        priceIncrementEntry = entryInput
+        state = "01020105"
+        printText("What type of product is it? (Type 0 if unsure. Check the help page to find out)")
+        
+    elif (state == "01020105"):
+
+        
+        itemType = itemTypeArray[int(entryInput)]
+        state = "01"
+        a = "0"
+
+        c.execute("INSERT INTO allItemsAndCodes(barcode, description, price, priceIncrement, quantityInStock, ItemType) VALUES (?, ?, ?, ?, ?, ?)",
+         (barcodeEntry, descriptionEntry, priceEntry, priceIncrementEntry, "0", entryInput))
+
+        printText("New Item Has been added:\nBarcode:" + barcodeEntry + "\nDescription:" + descriptionEntry + "\nPrice:$" + priceEntry + "\nItem Type:" + itemType + "\nQuantity In Stock:0")
+        
+        conn.commit()
+
+    elif (state == "01020201"):
+        state = "01"
+        barcodeHolder = entryInput
+        c.execute('SELECT description FROM allItemsAndCodes WHERE barcode =?', [barcodeHolder])
+        descriptionEntry = c.fetchone()
+        
+        if (descriptionEntry == None):
+            print("Barcode Not Found")
+        else:
+            descriptionEntry = str(descriptionEntry[0])
+            c.execute('DELETE FROM allItemsAndCodes WHERE barcode =?', [barcodeHolder])
+            printText("Successful Deletion")
+        
+
+
+
+
+        
+            
 
     
         
 def systemNotResponding(self):
     global state
-    state="00"
+    state="01"
    
-    printText("System Terminated; Press <Enter> to continue")
+    printText("Proccess Terminated; Press <Enter> to continue")
         
 
         

@@ -6,7 +6,8 @@ The ONE and ONLY Help Page:
 [xxxxxxxxxx] - scan any barcode you want!
 
 
-If ever something stops working or you want to cancel, press the escape key.
+If ever something stops working or you want to cancel
+press the escape key.
 
 
 
@@ -17,6 +18,7 @@ Price increment
 	- 1 = per each
 
 Item Type:
-	- 0 = Fruit
+	- 0 = Unspecified
 	- 1 = Vegetables
 	- 2 = Value Packs
+	- 3 = Fruit

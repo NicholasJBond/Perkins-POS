@@ -251,6 +251,8 @@ def changePrice():
 
 
 
+
+
                 c.execute('SELECT * FROM allItemsAndCodes WHERE barcode=?', [barcodePlaceholder])
 
                 c.execute('UPDATE allItemsAndCodes SET price = ? WHERE barcode=?', (lineInput, barcodePlaceholder))
@@ -401,7 +403,7 @@ def changeIncrement():
 
 
 def checkStock():
-    lineInput = input("cl/02/05~:")
+    lineInput = input("cl/02/07~:")
     itemsInfo = []
     head = ["Description", "Barcode", "Price", "Quantity In Stock", "Price Increment", "Item Type"]
 
@@ -418,7 +420,7 @@ def checkStock():
         print(c.execute('SELECT description FROM allItemsAndCodes ORDER BY description ASC'))
         c.execute('SELECT * FROM allItemsAndCodes')
 
-       
+        row = c.fetchall()
 
         for row in c.fetchall():
             if(row[3]==0):
