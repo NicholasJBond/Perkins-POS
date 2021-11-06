@@ -327,7 +327,7 @@ def changeQuantity():
             lineInput = input("How many " + descriptionEntry + " in stock? :")
 
             c.execute('UPDATE allItemsAndCodes SET quantityInStock = ? WHERE barcode = ?',[lineInput, barcodePlaceholder])
-            conn.commit
+            conn.commit()
             print('Success! Returning to cl~')
 
 

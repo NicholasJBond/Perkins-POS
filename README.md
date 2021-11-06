@@ -1,14 +1,18 @@
 # Perkins-POS
  Command Line based Point of Sale software.
 
- Current Version: PerkinsPOSTest-1.3.2
+ Current Version: PerkinsPOSTest-1.3.3
 
 
 
  Uptades:
  - Added other features into the tkinter app:
-    - add barcode
-    - delete barcode
+    - added ability to change barcode
+    - added ability to change description
+    - added ability to change price
+    - added ability to change price increment
+    - fixed rounding issues
+    - fixed duplicate issues
 
 
 

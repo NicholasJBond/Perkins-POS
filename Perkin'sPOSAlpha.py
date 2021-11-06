@@ -110,6 +110,7 @@ def getInput(self):
     global state
     global dbFetch
     global barcodeHolder
+    global barcodeEntry
     entryInput = inputEntry.get()
     inputEntry.delete(0, END)
     print(state)
@@ -137,10 +138,10 @@ def getInput(self):
         
 
         if(check_float(entryInput) == True):
-            cartPrice.append(float(dbFetch[2])*float(entryInput))
-            cartQuantity.append(entryInput)
+            cartPrice.append(round(float(dbFetch[2])*float(entryInput), 2))
+            cartQuantity.append(round(float(entryInput), 2))
             
-            cart.append([str(dbFetch[1]), "$"+str(dbFetch[2]*float(entryInput)), entryInput+"kg"])
+            cart.append([str(dbFetch[1]), "$"+str(round(float(dbFetch[2])*float(entryInput), 2)), str(round(float(entryInput), 2))+"kg"])
             head = ["Description", "Price", "Quantity"]
         
         
@@ -165,7 +166,7 @@ def getInput(self):
         elif (entryInput == "02"):
             state = "0102"
             
-            printText("Entering database mode!!!\nEditing the database is dangerous.\n nly do it if you know what you are doing.\nSelect the table you want to edit:\n00 - Cancel Operation\n01 - allItemsAndCodes.db")
+            printText("Entering database mode!!!\nEditing the database is dangerous.\n Only do it if you know what you are doing.\nSelect the table you want to edit:\n00 - Cancel Operation\n01 - allItemsAndCodes.db")
 
         else:
             if (entryInput != None):
@@ -190,39 +191,28 @@ def getInput(self):
             printText("Operation canceled\nPress <enter> to continue")
         
         if (entryInput == "01"):
-            state = "01020101"
+            state = "newBarcode"
             printText("Enter barcode of the new item")
-            
-
-            
-            
-            
-            
+         
 
         if (entryInput == "02"):
-            state = "01020201"
-            printText("Delete>>")
+            state = "deletestuff"
+            printText("Enter the barcode you wish to delete>>")
             
-    
-
-
-
-
-        
 
         if (entryInput == "03"):
-            state = "01"
-            printText("Change Barcode\nWoopsy That feature is not in the GUI\nTry PerkinsPOSShellVersion.py")
-        
+            state = "changeBarcode"
+            printText("Enter the barcode you wish to change>>")
+
 
         if (entryInput == "04"):
-            state = "01"
-            printText("Change Item Description\nWoopsy That feature is not in the GUI\nTry PerkinsPOSShellVersion.py")
+            state = "changeDescription"
+            printText("Enter the barcode you wish to change the description>>")
         
 
         if (entryInput == "05"):
-            state = "01"
-            printText("Change Item Price\nWoopsy That feature is not in the GUI\nTry PerkinsPOSShellVersion.py")
+            state = "changeprice"
+            printText("Enter the barcode you which to change the price>>")
         
 
         if (entryInput == "06"):
@@ -230,8 +220,8 @@ def getInput(self):
             printText("Change Item Quantity in Stock\nWoopsy That feature is not in the GUI\nTry PerkinsPOSShellVersion.py")
         
         if (entryInput == "07"):
-            state = "01"
-            printText("Change Price Measurement\nWoopsy That feature is not in the GUI\nTry PerkinsPOSShellVersion.py")
+            state = "changepriceincrement"
+            printText("Enter the barcode you wish to change the price increment")
         
 
         if (entryInput == "08"):
@@ -265,7 +255,7 @@ def getInput(self):
 
                 
                 itemsInfo.append([row[1], row[0], "$"+str(row[2]), row[4], priceIncrementEntry, itemType,])
-            printText(tabulate(itemsInfo, headers=head, tablefmt="fancy_grid", showindex=True))
+            printText(tabulate(itemsInfo, headers=head, tablefmt="fancy_grid", showindex=False))
         
         if (entryInput == "10"):
             state = "01"
@@ -280,37 +270,45 @@ def getInput(self):
             
         
 
-    elif (state == "01020101"):
+    elif (state == "newBarcode"):
         global barcodeEntry
         barcodeEntry = entryInput
-        state = "01020102"
+        c.execute('SELECT barcode FROM allItemsAndCodes WHERE barcode = ?', [barcodeEntry])
+        
+        if (c.fetchone() == None):
 
-        printText("Enter the description of the new item")
+            state = "newBarcode1"
+
+            printText("Enter the description of the new item")
+
+        else:
+            printText("An item already exists with the barcode of " + str(barcodeEntry))
+            state = "01"
 
 
-    elif (state == "01020102"):
+    elif (state == "newBarcode1"):
         global descriptionEntry
         descriptionEntry = entryInput
-        state = "01020103"
+        state = "newBarcode2"
         printText("Enter the price of the new item")
 
-    elif (state == "01020103"):
+    elif (state == "newBarcode2"):
         global priceEntry
         if (check_float(entryInput) == True):
             priceEntry = entryInput
-            state = "01020104"
+            state = "newBarcode3"
             printText("If measured in kilograms enter 0, if measured per item enter 1")
 
         else:
             printText("Do not use a $ sign when entering price. Press escape to cancel")
 
-    elif (state == "01020104"):
+    elif (state == "newBarcode3"):
 
         priceIncrementEntry = entryInput
-        state = "01020105"
+        state = "newBarcode4"
         printText("What type of product is it? (Type 0 if unsure. Check the help page to find out)")
         
-    elif (state == "01020105"):
+    elif (state == "newBarcode4"):
 
         
         itemType = itemTypeArray[int(entryInput)]
@@ -324,7 +322,7 @@ def getInput(self):
         
         conn.commit()
 
-    elif (state == "01020201"):
+    elif (state == "deletestuff"):
         state = "01"
         barcodeHolder = entryInput
         c.execute('SELECT description FROM allItemsAndCodes WHERE barcode =?', [barcodeHolder])
@@ -336,6 +334,108 @@ def getInput(self):
             descriptionEntry = str(descriptionEntry[0])
             c.execute('DELETE FROM allItemsAndCodes WHERE barcode =?', [barcodeHolder])
             printText("Successful Deletion")
+
+    elif (state == "changeBarcode"):
+        global barcodePlaceholder
+        barcodePlaceholder = entryInput
+        c.execute('SELECT * FROM allItemsAndCodes WHERE barcode = ?', [entryInput])
+        line = c.fetchone()
+
+        if (line != None):
+            
+            state = "changeBarcode2"
+            printText("New Barcode>>")
+
+        else:
+            printText("LOL get rekt, imagine trying to change something that doesn't exist LMAO")
+
+    elif (state == "changeBarcode2"):
+        state = "01"
+        print(barcodePlaceholder + entryInput)
+        c.execute('UPDATE allItemsAndCodes SET barcode = ? WHERE barcode = ?',[entryInput, barcodePlaceholder])
+        conn.commit()
+        printText("You changed the barcode. Oh well if it was a mistake. But.. you can't undo it.")
+
+    elif (state == "changeDescription"):
+        
+        barcodeEntry = entryInput
+        c.execute('SELECT barcode FROM allItemsAndCodes WHERE barcode = ?', [barcodeEntry])
+        
+        if (c.fetchone() == None):
+            printText("Item does not exist")
+            state = "01"
+            
+
+        else:
+            state = "changeDescription2"
+            c.execute('SELECT description FROM allItemsAndCodes WHERE barcode = ?', [barcodeEntry])
+            printText("Enter the new description for " + str(c.fetchone()[0]))
+
+
+    elif (state == "changeDescription2"):
+        c.execute('UPDATE allItemsAndCodes SET description = ? WHERE barcode = ?',[entryInput, barcodeEntry])
+        state = "01"
+        conn.commit()
+        printText("Description changed to " + entryInput)
+
+    elif (state == "changeprice"):
+        barcodeHolder = entryInput
+        c.execute("SELECT * FROM allItemsAndCodes WHERE barcode = ?", [entryInput])
+        dbFetch = c.fetchone()
+
+        if (dbFetch[0] == None):
+            printText("Barcode Does Not Exist, try again. Press escape to cancel")
+
+        else:
+            state = "changeprice2"
+            printText("Enter the new price of " + dbFetch[1])
+
+    elif (state == "changeprice2"):
+        c.execute("SELECT * FROM allItemsAndCodes WHERE barcode = ?", [barcodeHolder])
+        dbFetch = c.fetchall()
+
+        c.execute("UPDATE allItemsAndCodes SET price =? WHERE barcode =?", [entryInput, barcodeHolder])
+        conn.commit()
+        printText("The new price is $" + str(entryInput))
+        state = "01"
+
+    elif (state == "changepriceincrement"):
+        barcodeHolder = entryInput
+        c.execute("SELECT * FROM allItemsAndCodes WHERE barcode = ?", [entryInput])
+        dbFetch = c.fetchone()
+        
+
+        if (dbFetch[0] == None):
+            printText("Barcode Does Not Exist, try again. Press escape to cancel")
+
+        else:
+            state = "changepriceincrement2"
+            print(dbFetch[3])
+            c.execute("UPDATE allItemsAndCodes SET priceIncrement =? WHERE barcode =?", [str(1-int(dbFetch[3])), barcodeHolder])
+            conn.commit()
+            if (dbFetch[3] == 0):
+                c.execute("SELECT description FROM allItemsAndCodes WHERE barcode =?", [entryInput])
+
+                a=c.fetchone()
+                a=a[0]
+                
+                printText(str(a) + " used to be measured per kilo but now is measure per item")
+
+                state ="01"
+                
+            else:
+                c.execute("SELECT description FROM allItemsAndCodes WHERE barcode =?", [entryInput])
+                a=c.fetchone()
+                a=a[0]
+                printText(str(a) + " used to be measured per item but now is measure per kilo")
+                
+                state ="01"
+
+            
+            
+
+
+        
         
 
 
@@ -348,6 +448,7 @@ def getInput(self):
         
 def systemNotResponding(self):
     global state
+    conn.commit()
     state="01"
    
     printText("Proccess Terminated; Press <Enter> to continue")
