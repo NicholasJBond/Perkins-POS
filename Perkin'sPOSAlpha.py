@@ -4,6 +4,7 @@ from tkinter import *
 import sqlite3
 from tabulate import tabulate
 
+
 conn = sqlite3.connect('PerkinPOSDatabase')
 c = conn.cursor()
 c.execute('CREATE TABLE IF NOT EXISTS allItemsAndCodes(barcode TEXT, description TEXT, price REAL, priceIncrement INT, quantityInStock REAL, itemType INT)')
@@ -21,10 +22,17 @@ barcodeHolder = 0
 
 #Tk window
 root = Tk()
-root.title("PerkinsPOSTest-1.3.2")
+root.title("PerkinsPOSTest-1.3.3")
 root.geometry('825x900')
 
 #Tk Widgets
+menubar= Menu(root)
+
+
+
+
+
+
 inputEntry = Entry(root, width=89)
 inputEntry.pack()
 
@@ -225,9 +233,9 @@ def getInput(self):
         
 
         if (entryInput == "08"):
-            state = "01"
-            printText("Check Quantity\nWoopsy That feature is not in the GUI\nTry PerkinsPOSShellVersion.py")
-        
+            state = "checkqty"
+            printText("Enter the barcode or PLU that you want to check the quantity of>>")
+
 
         if (entryInput == "09"):
             state = "01"
@@ -431,8 +439,36 @@ def getInput(self):
                 
                 state ="01"
 
+    elif (state == "checkqty"):
+
+        if (dbFetch[0] == None):
+            printText("Barcode Does Not Exist, try again. Press escape to cancel")
+
+        else:
+
+            c.execute("SELECT * FROM allItemsAndCodes WHERE barcode = ?", [entryInput])
+            dbFetch = c.fetchone()
+
+
+            listtemp = []
+
+            listtemp.append([str(dbFetch[0]), str(dbFetch[1]),str(dbFetch[2]),str(dbFetch[3]),str(dbFetch[4]),str(dbFetch[5])])
+            head = ["Barcode", "Description", "Price", "Quantity In Stock", "itemType"]
             
             
+            printText(tabulate(listtemp, headers= head, tablefmt="fancy_grid", showindex=False))
+        
+
+  
+        
+
+
+
+
+
+            
+
+        
 
 
         
