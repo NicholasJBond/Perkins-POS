@@ -1,16 +1,20 @@
 from tkinter import *
+from login import *
+import login
 
 import time as tm
 import sqlite3
-import tabulate
+
+
+
 
 conn = sqlite3.connect('PerkinPOSDatabase')
 c = conn.cursor()
-c.execute('CREATE TABLE IF NOT EXISTS allItemsAndCodes(barcode TEXT, description TEXT, price REAL, priceIncrement INT, quantityInStock REAL, itemType INT)')
 c.execute('CREATE TABLE IF NOT EXISTS employees(firstName TEXT, lastName TEXT, employeeNumber TEXT, email TEXT, phone TEXT, address TEXT, dob TEXT, prefix TEXT, voidall TEXT, changeqty TEXT, markdown TEXT, reset TEXT, zreport TEXT, xreport TEXT, tenderdeclare TEXT, removetender TEXT, employeesonreg TEXT, cashindrawer TEXT, vendingmachine TEXT, openkey TEXT, epay TEXT, epayrefund TEXT, items TEXT, accounts TEXT, rewards TEXT, employee TEXT, supplier TEXT)')
-
+c.execute('CREATE TABLE IF NOT EXISTS allItemsAndCodes(barcode TEXT, description TEXT, price REAL,  priceincrement INT, quantityInStock REAL, itemType INT)')
 
 #variables
+versionName = "PerkinsPOSTest-2.2"
 global state
 state = 'Invoice'
 companyName="Perkins POS"
@@ -28,9 +32,23 @@ quantity = 1
 
 
 #function
+def startLoginKeybind(self):
+   startLogin()
+   
+
+def close():
+   root.destroy()
+   exit()
+
+def logout():
+   
+   root.destroy()
+   
+
 def donothing():
    print("Nothing Done")
 
+   
 def InvoiceMode():
    changeState("Invoice")
    voidmode.set(False)
@@ -48,25 +66,23 @@ def alternateMode(self):
    else:
       VoidMode()
 
-
-
-
 def mainMenubar():
+  
    menubar = Menu(root)
    systemmenu = Menu(menubar, tearoff=0)
-   systemmenu.add_command(label="Invoice", command=InvoiceMode, state = ACTIVE, accelerator="/")
+   systemmenu.add_command(label="Invoice", command=InvoiceMode, state = ACTIVE, accelerator="\\")
    systemmenu.add_command(label="Price & Quantity Check", command=donothing, state=DISABLED)
    systemmenu.add_command(label="Void", command=VoidMode, state=ACTIVE, accelerator=('\\'))
    systemmenu.add_separator()
-   systemmenu.add_command(label="Logout", command=donothing, state=DISABLED)
-   systemmenu.add_command(label="Exit", command=root.quit, accelerator="Cmd+Q")
+   systemmenu.add_command(label="Logout", command=logout, state=ACTIVE)
+   systemmenu.add_command(label="Exit", command=close, accelerator="Cmd+Q")
    menubar.add_cascade(label="System", menu=systemmenu)
 
    modifymenu = Menu(menubar, tearoff=0)
    modifymenu.add_command(label="Void", command=VoidMode, state=ACTIVE, accelerator='\\')
    modifymenu.add_command(label="Void All", command=donothing, state=DISABLED)
    modifymenu.add_separator()
-   modifymenu.add_command(label="Change Qty", command=voidmode, state=ACTIVE)
+   modifymenu.add_command(label="Change Qty", command=donothing, state=DISABLED)
    modifymenu.add_command(label="Markdown", command=donothing, state=DISABLED)
    modifymenu.add_command(label="Reset", command=donothing, state=DISABLED)
    menubar.add_cascade(label="Modify", menu=modifymenu)
@@ -308,8 +324,6 @@ def check_float(potential_float):
     except ValueError:
         return False
 
-
-
 def clearScreen():
    invoiceOutput.delete(0, END)
    invoicePriceOutput.delete(0, END)
@@ -317,7 +331,13 @@ def clearScreen():
 def cashPayment(self):
    if (keybaord==0):
 
-      changeState("Cash")
+      clearScreen()
+      entryOutput.config(state=NORMAL)
+      entryOutput.delete(0, END)
+      entryOutput.insert(1, 0)
+      printText("Paid With Cash. Total paid was $" + str(cartPrice), 0)
+      
+
 
 def eftposPayment(self):
    if (keybaord==0):
@@ -344,16 +364,13 @@ def reprintLast(self):
 
       changeState("reprintLast")
 
-
-
-
 def updateSubtotal():
    entryOutput.config(state=NORMAL)
    entryOutput.delete(0, END)
    entryOutput.insert(1, cartPrice)
 
-
 def getInput(self):
+   
    global barcodeHolder
    global quantity
    global stateholder
@@ -485,10 +502,7 @@ def getInput(self):
       
          
          
-   elif (state=="Cash"):
-      clearScreen()
-      printText('Payment Proccessed. Press P to print a receipt.', 0)
-      changeState("Invoice")
+   
 
         
          
@@ -521,15 +535,17 @@ def startRoot():
    global root
    global voidmode
    global stateholder
+   global employeeNumber
    keybaord = 1
    stateholder = 'Invoice'
    root = Tk()
    root.geometry("1600x900")
-   root.title("PerkinsPOSTest-2.0")
+   root.title(versionName)
 
 
    #variables
    voidmode=IntVar()
+  
 
 
    #menubar
@@ -543,6 +559,11 @@ def startRoot():
    changeState("Invoice")
    #set textbox
    printText("Scan Barcode to Begin", 0)
+   #set subtotal to 0
+   entryOutput.config(state=NORMAL)
+   entryOutput.delete(0, END)
+   entryOutput.insert(1, 0)
+
 
 
 
@@ -573,6 +594,7 @@ def startRoot():
    root.bind("<m>", memberpointsPayment)
    root.bind("<g>", giftcardPayment)
    root.bind("<p>", reprintLast)
+   root.bind("<Control_L>", startLoginKeybind)
 
 
 
@@ -582,10 +604,7 @@ def startRoot():
    root.mainloop()
 
 
-
-
-
-
+startRoot()
 
 
 

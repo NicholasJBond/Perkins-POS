@@ -1,5 +1,7 @@
-from root import *
+from mainWindow import *
 
-#if name = main
+x = 1
 if __name__=="__main__":
-   startRoot()
+   while x==1:
+      start()
+  
