@@ -7,17 +7,9 @@ c= conn.cursor()
 global companyName
 global focus
 global enterCount
-companyName = "POS Test 2.2"
+companyName = "POS Test 2.3"
 focus = 0
 enterCount = 0
-
-
-	
-
-
-	
-
-
 
 class mainWindow:
 
@@ -137,6 +129,7 @@ class mainWindow:
 			self.menubar.add_cascade(label="Supplier", menu=self.supliermenu)
 			self.supliermenu.add_command(label="Order Products", command=mainWindow.donothing, state=DISABLED)
 			master.config(menu=self.menubar)
+
 	class widgets:
 		def __init__(self, master):
 			self.master=master
@@ -204,7 +197,9 @@ class mainWindow:
 			self.dateEntry.insert(1, tm.strftime('%x'))
 			self.dateEntry.config(state=DISABLED)
 			self.master.after(1000, self.displayTimeAndDate)
+
 	def __init__(self, master):
+		self.loginPage = loginWindowClass(master)
 		self.master = master
 		self.windowSetupVar = self.windowSetup(master)
 		self.menubarSrtupVar = self.menubarSetup(master)
@@ -219,17 +214,24 @@ class mainWindow:
 		self.cartquantity = []
 		self.returnCount = 0
 
+		self.employee = self.loginPage.employeenum
+
+
+		
 
 
 
 		master.bind("<Return>", lambda a:self.bindReturn())
+		master.bind("<KP_Enter>", lambda a:self.bindReturn())
 		master.bind("</>", lambda b:self.bindDivide())
-		master.bind("<*>", lambda c:self.bindMultiply())
+		master.bind("<*>", lambda b:self.bindMultiply())
 		master.bind("<minus>", lambda e: self.bindMinus())
-		master.bind("<+>", lambda d:self.bindAdd())
+		master.bind("<+>", lambda b:self.bindAdd())
+		master.bind("<KP_Divide>", lambda b:self.bindDivide())
+		master.bind("<KP_Multiply>", lambda b:self.bindMultiply())
+		master.bind("<KP_Subtract>", lambda e: self.bindMinus())
+		master.bind("<KP_Add>", lambda b:self.bindAdd())
 
-
-	  
 
 	def changeState(self, statea):
 		global state
@@ -248,7 +250,6 @@ class mainWindow:
 	    except ValueError:
 	        return False
 
-
 	def printText(self, text):
 
 		self.widgetsVar.textbox1.config(state=NORMAL)
@@ -260,7 +261,8 @@ class mainWindow:
 
 		self.widgetsVar.textbox1.config(state=DISABLED)  
 
-	def close(self):
+	def close():
+		print("Lol, Imagine closing this application")
 		quit()
 
 	def donothing(self):
@@ -269,9 +271,22 @@ class mainWindow:
 
 	def logout(self, master):
 		master.destroy()	
+		print("LMAO, imagine having the balls to actually logout")
 
 	def bindReturn(self):
-		if self.returnCount == 1:
+		print(state)
+		print(self.returnCount)
+		self.priceList = self.widgetsVar.listboxPrice
+		self.itemList = self.widgetsVar.listboxDescription
+
+
+
+		if state=="Payment":
+			self.printText("Scan Barcode")
+			self.changeState("Invoice")
+			self.returnCount = 0
+
+		elif self.returnCount == 1 and self.widgetsVar.inputEntry.get()=="":
 			self.changeState("Payment")
 			self.returnCount = 0
 			self.printText("Payment State - Enter number and then hit any of the following keys:\n/ :Cash\n* :Eftpos\n- :Customer Accounts \n+ :Rewards Points")
@@ -290,56 +305,142 @@ class mainWindow:
 			self.c.execute("SELECT * from allItemsAndCodes WHERE barcode = ?", [self.input])
 			self.dbFetch=self.c.fetchone()
 
-			if state == "Invoice":
+			if self.input== "":
+				self.returnCount = self.returnCount + 1
 
-				if self.dbFetch == None:
-					print("No Barcode Found")
-					self.returnCount = self.returnCount + 1
+			else:
+				if state == "Invoice":
 
-				else:
-					if self.dbFetch[3] == 1:
-						self.priceIncrement = " each"
+					if self.dbFetch == None:
+						self.printText("No Barcode Found")
+
 					else:
-						self.priceIncrement = " per kilo"
+						if self.dbFetch[3] == 1:
+							self.priceIncrement = " each"
+						else:
+							self.priceIncrement = " per kilo"
 
-					self.cartbarcode.append(self.dbFetch[0])
-					self.cartquantity.append(1)
-					self.totalPrice = self.totalPrice + self.dbFetch[2]
-					self.widgetsVar.listboxDescription.insert("end", str(self.dbFetch[1]) + " x 1 @ $" + str(self.dbFetch[2]) + str(self.priceIncrement))
-					self.widgetsVar.listboxPrice.insert("end", "$"+str(self.dbFetch[2]))
-					self.widgetsVar.subtotal.delete(0, END)
-					self.widgetsVar.subtotal.insert(0, self.totalPrice)
-					print(state)
+						
 
-			elif state == "Void":
-				if self.dbFetch == None:
-					print("No Barcode Found")
-					self.returnCount = self.returnCount + 1
 
-				else:
-					if self.dbFetch[3] == 1:
-						self.priceIncrement = " each"
+
+						self.i = 0
+						self.end = 0
+						
+
+						while self.i <= len(self.cartbarcode) and self.end == 0:
+						
+
+							try:
+								if self.cartbarcode[self.i] == self.input:
+									
+									self.itemList.delete(self.i)
+									self.priceList.delete(self.i)
+
+
+									self.cartbarcode.append(self.dbFetch[0])
+									self.cartquantity.append(1+self.cartquantity[self.i])
+
+									self.cartbarcode.pop(self.i)
+									self.cartquantity.pop(self.i)
+									
+
+									self.totalPrice = self.totalPrice + self.dbFetch[2]
+									self.widgetsVar.listboxDescription.insert("end", str(self.dbFetch[1]) + " x "+str(self.cartquantity[len(self.cartquantity)-1]) +" @ $" + str(self.dbFetch[2]) + str(self.priceIncrement))
+									self.widgetsVar.listboxPrice.insert("end", "$"+str(self.dbFetch[2]*self.cartquantity[len(self.cartquantity)-1]))
+									self.widgetsVar.subtotal.delete(0, END)
+									self.widgetsVar.subtotal.insert(0, self.totalPrice)
+
+									self.end = 1
+									print(len(self.cartbarcode))
+
+									
+
+
+								else:
+									self.i = self.i + 1
+
+							except IndexError:
+								self.end = 1
+								self.cartbarcode.append(self.dbFetch[0])
+								print("Subsequent cartbarcode: " + str(self.cartbarcode))
+								self.cartquantity.append(1)
+								self.totalPrice = self.totalPrice + self.dbFetch[2]
+								self.widgetsVar.listboxDescription.insert("end", str(self.dbFetch[1]) + " x 1 @ $" + str(self.dbFetch[2]) + str(self.priceIncrement))
+								self.widgetsVar.listboxPrice.insert("end", "$"+str(self.dbFetch[2]))
+								self.widgetsVar.subtotal.delete(0, END)
+								self.widgetsVar.subtotal.insert(0, self.totalPrice)
+
+				elif state == "Void":
+					if self.dbFetch == None:
+						print("No Barcode Found")
+
 					else:
-						self.priceIncrement = " per kilo"
+						if self.dbFetch[3] == 1:
+							self.priceIncrement = " each"
+						else:
+							self.priceIncrement = " per kilo"
 
 
-					self.cartbarcode.append(self.dbFetch[0])
-					self.cartquantity.append(-1)
-					self.totalPrice = self.totalPrice - self.dbFetch[2]
-					self.widgetsVar.listboxDescription.insert("end", str(self.dbFetch[1]) + " x -1 @ $" + str(self.dbFetch[2]) + str(self.priceIncrement))
-					self.widgetsVar.listboxPrice.insert("end", "-$"+str(self.dbFetch[2]))
-					self.widgetsVar.listboxDescription.itemconfig(self.widgetsVar.listboxDescription.size()-1, {'fg':'red'})
-					self.widgetsVar.listboxPrice.itemconfig(self.widgetsVar.listboxPrice.size()-1, {'fg':'red'})
-					self.widgetsVar.subtotal.delete(0, END)
-					self.widgetsVar.subtotal.insert(0, self.totalPrice)
-			elif state=="Payment":
-				self.printText("Scan Barcode")
-				self.changeState("Invoice")
-			
-			
+						self.i = 0
+						self.end = 0
+						
 
-		return None
+						while self.i <= len(self.cartbarcode) and self.end == 0:
+						
 
+							try:
+								if self.cartbarcode[self.i] == self.input:
+									
+									self.itemList.delete(self.i)
+									self.priceList.delete(self.i)
+
+
+									self.cartbarcode.append(self.dbFetch[0])
+									self.cartquantity.append(self.cartquantity[self.i]-1)
+
+									self.cartbarcode.pop(self.i)
+									self.cartquantity.pop(self.i)
+									
+
+									self.totalPrice = self.totalPrice + self.dbFetch[2]
+									self.widgetsVar.listboxDescription.insert("end", str(self.dbFetch[1]) + " x "+str(self.cartquantity[len(self.cartquantity)-1]) +" @ $" + str(self.dbFetch[2]) + str(self.priceIncrement))
+									self.widgetsVar.listboxPrice.insert("end", "$"+str(self.dbFetch[2]*self.cartquantity[len(self.cartquantity)-1]))
+									if self.cartquantity[self.i] < 0:
+										self.widgetsVar.listboxDescription.itemconfig(self.widgetsVar.listboxDescription.size()-1, {'fg':'red'})
+										self.widgetsVar.listboxPrice.itemconfig(self.widgetsVar.listboxPrice.size()-1, {'fg':'red'})
+									self.widgetsVar.subtotal.delete(0, END)
+									self.widgetsVar.subtotal.insert(0, self.totalPrice)
+
+									self.end = 1
+									print(len(self.cartbarcode))
+
+									
+
+
+								else:
+									self.i = self.i + 1
+
+							except IndexError:
+								self.cartbarcode.append(self.dbFetch[0])
+								self.cartquantity.append(-1)
+								self.totalPrice = self.totalPrice - self.dbFetch[2]
+								self.widgetsVar.listboxDescription.insert("end", str(self.dbFetch[1]) + " x -1 @ $" + str(self.dbFetch[2]) + str(self.priceIncrement))
+								self.widgetsVar.listboxPrice.insert("end", "-$"+str(self.dbFetch[2]))
+								if self.cartquantity[self.i] < 0:
+									self.widgetsVar.listboxDescription.itemconfig(self.widgetsVar.listboxDescription.size()-1, {'fg':'red'})
+									self.widgetsVar.listboxPrice.itemconfig(self.widgetsVar.listboxPrice.size()-1, {'fg':'red'})
+								self.widgetsVar.subtotal.delete(0, END)
+								self.widgetsVar.subtotal.insert(0, self.totalPrice)
+
+
+						
+						
+				
+				
+				
+
+			return None
 
 	def bindMinus(self):
 		self.widgetsVar.inputEntry.delete(len(self.widgetsVar.inputEntry.get())-1)
@@ -360,7 +461,7 @@ class mainWindow:
 
 			else:
 			
-				self.printText("Order Proccessed. Price came to $" + str(self.widgetsVar.subtotal.get()))
+				self.printText("Order Proccessed. Price came to $" + str(round(self.widgetsVar.subtotal.get()), 2))
 				
 
 			self.conn = sqlite3.connect('PerkinPOSDatabase')
@@ -379,6 +480,10 @@ class mainWindow:
 				self.conn.commit()
 
 
+			self.cartbarcode = []
+			self.cartquantity = []
+			self.totalPrice = 0
+
 			self.widgetsVar.listboxDescription.delete(0, END)
 			self.widgetsVar.listboxPrice.delete(0, END)
 			self.widgetsVar.subtotal.delete(0, END)
@@ -389,15 +494,93 @@ class mainWindow:
 
 		return None
 
-	def binkMultiply(self):
+	def bindMultiply(self):
+		self.widgetsVar.inputEntry.delete(len(self.widgetsVar.inputEntry.get())-1)
+
+		if state == "Invoice":
+			if self.check_float(self.widgetsVar.inputEntry.get()) == True:
+				self.newQuantity = self.widgetsVar.inputEntry.get()
+
+				self.cartquantity[len(self.cartquantity)-1] = float(self.newQuantity)
+				print(self.cartquantity)
+				self.widgetsVar.inputEntry.delete(0, END)
+				self.i = 0
+				self.totalPrice=0
+				while self.i <len(self.cartquantity):
+					self.totalPrice = self.cartquantity[self.i] + self.totalPrice
+					self.i = self.i + 1
+
+				
+				self.c.execute("SELECT * FROM allItemsAndCodes where barcode = ?", [self.cartbarcode[self.i-1]])
+				self.dbFetch=self.c.fetchone()
+				self.widgetsVar.subtotal.delete(0, END)
+				self.widgetsVar.subtotal.insert(0, self.totalPrice*self.dbFetch[2])
+				if self.dbFetch[3] == 1:
+					self.priceIncrement = " each"
+				else:
+					self.priceIncrement = " per kilo"
+
+				self.widgetsVar.listboxDescription.delete(END)
+				self.widgetsVar.listboxPrice.delete(END)
+
+				self.widgetsVar.listboxDescription.insert("end", str(self.dbFetch[1]) + " x" + self.newQuantity + "@ $" + str(self.dbFetch[2]) + str(self.priceIncrement))
+				self.widgetsVar.listboxPrice.insert("end", "$"+str(float(self.dbFetch[2])*float(self.newQuantity)))
+
+		elif state == "Void":
+			if self.check_float(self.widgetsVar.inputEntry.get()) == True:
+				self.newQuantity = float(self.widgetsVar.inputEntry.get())*-1
+
+				self.cartquantity[len(self.cartquantity)-1] =self.newQuantity
+				print(self.cartquantity)
+				self.widgetsVar.inputEntry.delete(0, END)
+				self.i = 0
+				self.totalPrice=0
+				while self.i <len(self.cartquantity):
+					self.totalPrice = self.cartquantity[self.i] + self.totalPrice
+					self.i = self.i + 1
+
+				
+				self.c.execute("SELECT * FROM allItemsAndCodes where barcode = ?", [self.cartbarcode[self.i-1]])
+				self.dbFetch=self.c.fetchone()
+				self.widgetsVar.subtotal.delete(0, END)
+				self.widgetsVar.subtotal.insert(0, self.totalPrice*self.dbFetch[2])
+				if self.dbFetch[3] == 1:
+					self.priceIncrement = " each"
+				else:
+					self.priceIncrement = " per kilo"
+
+				self.widgetsVar.listboxDescription.delete(END)
+				self.widgetsVar.listboxPrice.delete(END)
+
+				self.widgetsVar.listboxDescription.insert("end", str(self.dbFetch[1]) + " x" + str(self.newQuantity) + "@ $" + str(self.dbFetch[2]) + str(self.priceIncrement))
+				self.widgetsVar.listboxPrice.insert("end", "$"+str(float(self.dbFetch[2])*float(self.newQuantity)))
+
+				if self.cartquantity[len(self.cartquantity)-1] < 0:
+					self.widgetsVar.listboxDescription.itemconfig(self.widgetsVar.listboxDescription.size()-1, {'fg':'red'})
+					self.widgetsVar.listboxPrice.itemconfig(self.widgetsVar.listboxPrice.size()-1, {'fg':'red'})
+
+
+
+
+
+
+		else:
+			return None
+
+	def bindAdd(self):
 		self.widgetsVar.inputEntry.delete(len(self.widgetsVar.inputEntry.get())-1)
 		return None
 
 
 
-	
-		
 
+
+
+
+
+
+
+		return None
 
 class loginWindowClass:
 	def __init__(self, master):
@@ -422,13 +605,16 @@ class loginWindowClass:
 		self.destroyLogin.place(anchor=CENTER, relx=0.5, rely=0.9)
 
 		self.loginWindow.bind("<Return>", lambda i=master, j=self.entry1:self.login(i, j))
+		self.loginWindow.bind("<KP_Enter>", lambda i=master, j=self.entry1:self.login(i, j))
+		self.employeenum=5
+
 		
 
 	def login(self, master, entryInputs):
 		
 
 
-		c.execute('SELECT employeeNumber FROM employees WHERE employeeNumber = ?', [entryInputs.get()])
+		c.execute('SELECT * FROM employees WHERE employeeNumber = ?', [entryInputs.get()])
 		self.dbFetch = c.fetchone()
 
 		if self.dbFetch ==None:
@@ -445,6 +631,16 @@ class loginWindowClass:
 			self.entry = mainWindowwindow.widgetsVar.inputEntry
 			self.entry.focus()
 			
+			self.employeenum=self.dbFetch[0]+" "+self.dbFetch[1][0]
+			mainWindowwindow.widgetsVar.employeeEntry.config(state=NORMAL)
+			mainWindowwindow.widgetsVar.employeeEntry.delete(0, END)
+
+			mainWindowwindow.widgetsVar.employeeEntry.insert(0, self.employeenum)
+			mainWindowwindow.widgetsVar.employeeEntry.config(state=DISABLED)
+
+			
+
+			
 
 
 		return None
@@ -458,7 +654,7 @@ def start():
 	global mainWindowwindow
 	root = Tk()
 	voidmode = IntVar()
-	initialLogin=loginWindowClass(root)
+	
 	
 	root.withdraw()
 	mainWindowwindow = mainWindow(root)

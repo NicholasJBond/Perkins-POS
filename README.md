@@ -1,17 +1,13 @@
 # Perkins-POS
- Command Line based Point of Sale software.
+A point of dale software. Still in testing stage
 
- Current Version: PerkinsPOSTest-2.2
+ Current Version: PerkinsPOSTest-2.3
 
 
 
  Uptades:
- - Added the ability to scan barcodes and void items. Can now pay using cash.
- - Douple tap enter and the hit / to pay with cash. 
- - New GUI look and restructured all code. 
- - Classes are now used
- - Added login feature: employee login is 010209 or 010300
-
+- Added ability to change quantity
+- Added ability to change negative quantity by being in void mode
 
 
 
