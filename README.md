@@ -1,13 +1,13 @@
 # Perkins-POS
 A point of dale software. Still in testing stage
 
- Current Version: PerkinsPOSTest-2.3
+ Current Version: PerkinsPOSTest-2.4
 
 
 
- Uptades:
-- Added ability to change quantity
-- Added ability to change negative quantity by being in void mode
+ 2.4 Uptades:
+- Made items red when adding items through scanning them.
+- Changed the way refunding/voiding works.
 
 
 

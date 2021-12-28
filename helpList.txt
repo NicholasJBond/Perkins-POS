@@ -1,0 +1,12 @@
+Scan Barcodes and their price should appear on the screen.
+To change the price of an item, type a number and then hit /
+To change the quantity of an item, type a number and then hit *
+
+To pay for the items double tap enter and you should see a payment screen.
+Type the amount of cash the customer has given and then hit /
+The screen should reset and show you the change back.
+
+Type 000 and then hit enter to logout and close the POS
+Type 000000 and then hit enter to come back to this page.
+
+Press Enter to Exit Help Page
