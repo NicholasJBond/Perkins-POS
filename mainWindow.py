@@ -8,7 +8,7 @@ c= conn.cursor()
 global companyName
 global focus
 global enterCount
-companyName = "POS Test 2.4"
+companyName = "POS Test 2.5"
 focus = 0
 enterCount = 0
 
@@ -215,7 +215,6 @@ class mainWindow:
 		self.employee = self.loginPage.employeenum
 
 
-		
 
 
 
@@ -224,6 +223,15 @@ class mainWindow:
 		master.bind("<KP_Divide>", lambda b:self.bindDivide())
 		master.bind("<KP_Multiply>", lambda b:self.bindMultiply())
 		master.bind("<KP_Add>", lambda b:self.bindAdd())
+
+		c.execute("SELECT value FROM settings WHERE settingName = 'Sales Count'")
+		self.sales_count = c.fetchone()
+		self.sales_count = self.sales_count[0]
+
+		self.widgetsVar.salesEntry.config(state = NORMAL)
+		self.widgetsVar.salesEntry.delete(0, END)
+		self.widgetsVar.salesEntry.insert(0, self.sales_count)
+		self.widgetsVar.salesEntry.config(state = DISABLED)
 
 	def changeState(self, statea):
 		global state
@@ -292,7 +300,7 @@ class mainWindow:
 
 			else:
 
-				self.printText("Scan Barcode\n/: Markdown\n*: Change Qty")
+				self.printText("Scan Barcode\n/: Change Price\n*: Change Qty")
 				self.widgetsVar.inputEntry.focus()
 				self.conn = sqlite3.connect('PerkinPOSDatabase')
 				self.c = self.conn.cursor()
@@ -330,22 +338,24 @@ class mainWindow:
 
 										if self.cartquantity[self.i] != -1:
 
-											self.tempPrice = self.cartPrice[self.i]/self.cartquantity[self.i]
-											self.totalPrice = self.totalPrice - self.cartPrice[self.i]
+											try:
+												self.tempPrice = float(self.cartPrice[self.i])/float(self.cartquantity[self.i])
+											except ZeroDivisionError:
+												self.tempPrice = self.dbFetch[2]
+											self.totalPrice = self.totalPrice - float(self.cartPrice[self.i])
 											self.cartbarcode.append(self.dbFetch[0])
 											self.cartquantity.append(self.cartquantity[self.i]+1)
-											self.cartPrice.append(self.tempPrice*self.cartquantity[self.cartquantity[self.i]])
+											print(f'temp price is {self.tempPrice}, total price is {self.totalPrice}, the last item of cart quantity is {self.cartquantity[len(self.cartquantity)-1]}')
+											self.cartPrice.append(self.tempPrice*self.cartquantity[len(self.cartquantity)-1])
+
 											
 
 											self.cartbarcode.pop(self.i)
 											self.cartquantity.pop(self.i)
 											self.cartPrice.pop(self.i)
 
-
-
-
-											
-											self.totalPrice = self.totalPrice + self.tempPrice*self.cartquantity[self.i]
+											self.totalPrice = self.totalPrice + self.tempPrice*self.cartquantity[len(self.cartquantity)-1]
+											print(f'appending total price: {self.totalPrice}')
 											if self.dbFetch[3] == 1:
 												self.outputText = str(self.dbFetch[1]) + " x "+str(self.cartquantity[len(self.cartquantity)-1]) +" @ " + "${:,.2f}".format(float(self.tempPrice)) + " each"
 											else:
@@ -355,15 +365,17 @@ class mainWindow:
 											self.widgetsVar.listboxDescription.insert(END, self.outputText)
 											self.widgetsVar.listboxPrice.insert("end", "${:,.2f}".format(float(self.tempPrice*self.cartquantity[len(self.cartquantity)-1])))
 
-											if self.cartquantity[self.i] < 0:
+											if self.cartPrice[len(self.cartPrice)-1] < 0:
 												self.widgetsVar.listboxDescription.itemconfig(self.widgetsVar.listboxDescription.size()-1, {'fg':'red'})
 												self.widgetsVar.listboxPrice.itemconfig(self.widgetsVar.listboxPrice.size()-1, {'fg':'red'})
+
+
 
 										else:
 											self.cartbarcode.pop(self.i)
 											self.cartquantity.pop(self.i)
-											self.totalPrice = self.totalPrice + self.dbFetch[2]
-											self.cartPrice.append(self.dbFetch[2])
+											self.totalPrice = self.totalPrice - self.cartPrice[self.i]
+											self.cartPrice.pop(self.i)
 
 											
 
@@ -418,13 +430,14 @@ class mainWindow:
 			self.changeState("Invoice")
 			while self.i < len(self.cartbarcode):
 				
-				self.c.execute('SELECT * from allItemsAndCodes where barcode = ?', [str(self.cartbarcode[self.i])])
+				c.execute('SELECT * from allItemsAndCodes where barcode = ?', [str(self.cartbarcode[self.i])])
 				
-				self.quantity = self.c.fetchone()
-				self.c.execute('UPDATE allItemsAndCodes SET quantityInStock = ? WHERE barcode = ?', [self.quantity[4] - self.cartquantity[self.i], self.cartbarcode[self.i]])
+				self.quantity = c.fetchone()
+				print(self.quantity)
+				c.execute('UPDATE allItemsAndCodes SET quantityInStock = ? WHERE barcode = ?', [self.quantity[4] - self.cartquantity[self.i], self.cartbarcode[self.i]])
 				
 				self.i = self.i+1
-				self.conn.commit()
+				conn.commit()
 			print("Cart Items:")
 			print(self.cartbarcode)
 			print(self.cartquantity)
@@ -438,6 +451,16 @@ class mainWindow:
 			self.widgetsVar.subtotal.delete(0, END)
 			self.widgetsVar.subtotal.insert(0, 0)
 			self.widgetsVar.inputEntry.delete(0, END)
+			c.execute("SELECT value FROM settings WHERE settingName = 'Sales Count'")
+			self.sales_count = c.fetchone()
+			self.sales_count = self.sales_count[0]+1
+
+			c.execute("UPDATE settings SET value = ? WHERE settingName = 'Sales Count'", [self.sales_count])
+			self.widgetsVar.salesEntry.config(state = NORMAL)
+			self.widgetsVar.salesEntry.delete(0, END)
+			self.widgetsVar.salesEntry.insert(0, self.sales_count)
+			self.widgetsVar.salesEntry.config(state = DISABLED)
+			conn.commit()
 
 		elif state == "Invoice":
 			if self.check_float(self.widgetsVar.inputEntry.get())==True:
@@ -445,13 +468,20 @@ class mainWindow:
 				if self.cartbarcode != []:
 
 					if float(self.widgetsVar.inputEntry.get()) > float(self.cartPrice[len(self.cartPrice)-1]):
-						self.printText("Scan Barcode\n/: Markdown\n*: Change Qty\nWARNING: Price is higher than before")
+						self.printText("Scan Barcode\n/: Change Price\n*: Change Qty\nWARNING: Price is higher than before")
 
 
 
 					self.totalPrice = self.totalPrice - float(self.cartPrice[len(self.cartPrice)-1])
-					self.cartPrice[len(self.cartPrice)-1] = self.widgetsVar.inputEntry.get()
-					self.totalPrice = float(self.totalPrice) + float(self.cartPrice[len(self.cartPrice)-1])
+					print(self.totalPrice)
+					self.cartPrice[len(self.cartPrice)-1] = (float(self.widgetsVar.inputEntry.get())*self.cartquantity[len(self.cartquantity)-1])
+					print(self.cartPrice[len(self.cartPrice)-1])
+
+					self.totalPrice = float(self.totalPrice) + self.cartPrice[len(self.cartquantity)-1]
+					print(self.totalPrice)
+				
+
+
 
 					if self.dbFetch[3] == 1:
 						self.outputText = str(self.dbFetch[1]) + " x "+str(self.cartquantity[len(self.cartquantity)-1]) +" @ " + "${:,.2f}".format(float(self.widgetsVar.inputEntry.get())) + " each"
@@ -471,6 +501,11 @@ class mainWindow:
 			else:
 				print("Invalid amount")
 
+
+			if self.cartPrice[len(self.cartPrice)-1] < 0:
+				self.widgetsVar.listboxDescription.itemconfig(self.widgetsVar.listboxDescription.size()-1, {'fg':'red'})
+				self.widgetsVar.listboxPrice.itemconfig(self.widgetsVar.listboxPrice.size()-1, {'fg':'red'})
+
 		return None
 
 	def bindMultiply(self):
@@ -480,44 +515,78 @@ class mainWindow:
 			if self.check_float(self.widgetsVar.inputEntry.get()) == True:
 				if self.cartbarcode != []:
 
-					self.newQuantity = self.widgetsVar.inputEntry.get()
-					self.widgetsVar.inputEntry.delete(0, END)
 
-					self.c.execute("SELECT * FROM allItemsAndCodes where barcode = ?", [self.cartbarcode[len(self.cartbarcode)-1]])
-					self.dbFetch=self.c.fetchone()
+					if self.widgetsVar.inputEntry.get() != '0':
 
-					self.tempPrice = float(self.cartPrice[len(self.cartPrice)-1])/float(self.cartquantity[len(self.cartquantity)-1])
-					self.totalPrice=float(self.totalPrice)-float(self.cartPrice[len(self.cartPrice)-1])
-					self.cartquantity[len(self.cartquantity)-1] = float(self.newQuantity)
-					self.cartPrice[len(self.cartPrice)-1] = (self.cartquantity[len(self.cartquantity)-1]*self.tempPrice)
-					
+						self.newQuantity = self.widgetsVar.inputEntry.get()
+						self.widgetsVar.inputEntry.delete(0, END)
 
-					
-					
+						self.c.execute("SELECT * FROM allItemsAndCodes where barcode = ?", [self.cartbarcode[len(self.cartbarcode)-1]])
+						self.dbFetch=self.c.fetchone()
+
+						try:
+							self.tempPrice = float(self.cartPrice[len(self.cartPrice)-1])/float(self.cartquantity[len(self.cartquantity)-1])
+						except ZeroDivisionError:
+							self.tempPrice = self.dbFetch[2]
+						self.totalPrice=float(self.totalPrice)-float(self.cartPrice[len(self.cartPrice)-1])
+						self.cartquantity[len(self.cartquantity)-1] = float(self.newQuantity)
+						self.cartPrice[len(self.cartPrice)-1] = (self.cartquantity[len(self.cartquantity)-1]*self.tempPrice)
+						
+
+						
+						
 
 
-					self.i = 0
-					
-					self.totalPrice=self.totalPrice+(self.cartquantity[len(self.cartquantity)-1]*self.tempPrice)
-					
-					self.widgetsVar.subtotal.delete(0, END)
-					self.widgetsVar.subtotal.insert(0, self.totalPrice)
+						self.i = 0
+						
+						self.totalPrice=self.totalPrice+(self.cartquantity[len(self.cartquantity)-1]*self.tempPrice)
+						
+						self.widgetsVar.subtotal.delete(0, END)
+						self.widgetsVar.subtotal.insert(0, self.totalPrice)
 
-					if self.dbFetch[3] == 1:
-						self.outputText = str(self.dbFetch[1]) + " x "+str(self.newQuantity) +" @ " + "${:,.2f}".format(float(self.tempPrice)) + " each"
+						if self.dbFetch[3] == 1:
+							self.outputText = str(self.dbFetch[1]) + " x "+str(self.newQuantity) +" @ " + "${:,.2f}".format(float(self.tempPrice)) + " each"
+						else:
+							self.outputText = str(self.dbFetch[1]) + " x "+str(self.newQuantity) +"kg @ " + "${:,.2f}".format(float(self.tempPrice)) + " per kilo"
+
+
+						self.widgetsVar.listboxDescription.delete(END)
+						self.widgetsVar.listboxPrice.delete(END)
+
+						self.widgetsVar.listboxDescription.insert("end", self.outputText)
+						self.widgetsVar.listboxPrice.insert("end", "${:,.2f}".format(self.cartquantity[len(self.cartquantity)-1]*self.tempPrice))
+						
+						if self.cartPrice[len(self.cartPrice)-1] < 0:
+							self.widgetsVar.listboxDescription.itemconfig(self.widgetsVar.listboxDescription.size()-1, {'fg':'red'})
+							self.widgetsVar.listboxPrice.itemconfig(self.widgetsVar.listboxPrice.size()-1, {'fg':'red'})
+
 					else:
-						self.outputText = str(self.dbFetch[1]) + " x "+str(self.newQuantity) +"kg @ " + "${:,.2f}".format(float(self.tempPrice)) + " per kilo"
+						self.i = 0
+						self.end = 0
+						while self.i <= len(self.cartbarcode) and self.end == 0:
+							try:
+								if self.cartbarcode[self.i] == self.cartbarcode[len(self.cartbarcode)-1]:
+									self.itemList.delete(self.i)
+									self.priceList.delete(self.i)
+									self.cartbarcode.pop(self.i)
+									self.cartquantity.pop(self.i)
+									self.totalPrice = self.totalPrice - self.cartPrice[self.i]
+									self.cartPrice.pop(self.i)
+									self.widgetsVar.inputEntry.delete(0, END)
+									self.widgetsVar.subtotal.delete(0, END)
+									self.widgetsVar.subtotal.insert(0, self.totalPrice)
+									self.end = 1
+
+								else:
+									self.i = self.i +1
+
+							except IndexError:
+								print("Nothing to Void")
 
 
-					self.widgetsVar.listboxDescription.delete(END)
-					self.widgetsVar.listboxPrice.delete(END)
+						
 
-					self.widgetsVar.listboxDescription.insert("end", self.outputText)
-					self.widgetsVar.listboxPrice.insert("end", "${:,.2f}".format(self.cartquantity[len(self.cartquantity)-1]*self.tempPrice))
-					
-					if self.cartquantity[len(self.cartquantity)-1] < 0:
-						self.widgetsVar.listboxDescription.itemconfig(self.widgetsVar.listboxDescription.size()-1, {'fg':'red'})
-						self.widgetsVar.listboxPrice.itemconfig(self.widgetsVar.listboxPrice.size()-1, {'fg':'red'})
+
 
 			else:
 				print("Enter a valid quantity")
@@ -531,18 +600,47 @@ class mainWindow:
 
 	def bindAdd(self):
 		self.widgetsVar.inputEntry.delete(len(self.widgetsVar.inputEntry.get())-1)
-		return None
+
+		self.input = self.widgetsVar.inputEntry.get() 
+
+		if self.getSettingsState("Enable Lookup") == True:
 
 
 
+			conn.commit()
+			c.execute("SELECT * FROM allItemsAndCodes WHERE barcode = ?", [self.input])
+			self.dbFetch = c.fetchone()
+			
+		
+			if self.dbFetch == None:
+				print("No Such Barcode")
+
+			else:
+				
+
+				self.printText("Quantity in stock for " + str(self.dbFetch[1]) + " is: " + str(self.dbFetch[4]) + str(isWeighed(self.input)))
+				self.printText(f'Item: {self.dbFetch[1]}\nPrice: ${self.dbFetch[2]}\nQuantity In Stock: {self.dbFetch[4]} {isWeighed(self.input)}')
+
+		else:
+			print("Feature DISABLED")
 
 
 
+	def getSettingsState(self, settingName):
+		c.execute("SELECT value FROM settings WHERE settingName = ?", [settingName])
+		self.settingState = c.fetchone()
+		self.settingState = self.settingState[0]
 
+		if self.settingState == 0:
+			return False
 
+		elif self.settingState == 1:
+			return True
 
+		else:
+			return self.settingState
 
-		return None
+	
 
 class loginWindowClass:
 	def __init__(self, master):
@@ -650,6 +748,31 @@ class helpWindowClass:
 		self.helpWindow.destroy()
 
 
+def insertSetting(settingName, value):
+	c.execute('SELECT settingName FROM settings WHERE settingName = ?', [settingName])
+	dbFetch = c.fetchone()
+	conn.commit()
+	if dbFetch == None:
+		c.execute("INSERT INTO settings(settingName, value) VALUES ( ?, ?)", ([settingName, value,]))
+
+def isWeighed(barcode):
+		c.execute("SELECT priceIncrement FROM allItemsAndCodes WHERE barcode = ?", [barcode])
+		dbFetch = c.fetchone()
+		if dbFetch == None:
+			print("Barcode Not Foudn")
+
+		else:
+			if dbFetch[0] == 0:
+				tempVar = " kilo"
+
+			else:
+				tempVar = " units"
+
+			return tempVar
+		
+
+
+
 def start():
 	x =1 
 	global voidmode
@@ -657,12 +780,12 @@ def start():
 	c.execute('CREATE TABLE IF NOT EXISTS allItemsAndCodes(barcode TEXT, description TEXT, price REAL, priceIncrement INT, quantityInStock REAL, itemType INT)')
 	c.execute('CREATE TABLE IF NOT EXISTS employees(firstName TEXT, lastName TEXT, employeeNumber TEXT, email TEXT, phone TEXT, address TEXT, dob TEXT, mgr TEXT)')
 	c.execute('CREATE TABLE IF NOT EXISTS settings(settingName TEXT, value INT)')
-	c.execute('SELECT settingName FROM settings WHERE settingName = ?', ["Default Employee Number"])
-	dbFetch = c.fetchone()
-	conn.commit()
-	if dbFetch == None:
-		c.execute("INSERT INTO settings(settingName, value) VALUES ( ?, ?)", (["Default Employee Number", "1",]))
-		
+
+	insertSetting("Default Employee Number", 1)
+	insertSetting("Sales Count", 1)
+	insertSetting("Enable Lookup", 1)
+
+
 	root = Tk()
 	voidmode = IntVar()
 	
