@@ -120,7 +120,7 @@ class mainWindow:
 			self.employeeinfomenu.add_command(label="Edit All", command=mainWindow.donothing, state=DISABLED)
 			self.employeemenu.add_command(label="Edit Employee Permissions", command=mainWindow.donothing, state=DISABLED)
 
-			self.databasemenu.add_command(label="Settings", command=mainWindow.donothing, state=DISABLED)
+			self.databasemenu.add_command(label="Settings", command=lambda: mainWindow.openSettings(self, master), state=ACTIVE)
 
 			self.supliermenu=Menu(self.menubar, tearoff=0)
 			self.menubar.add_cascade(label="Supplier", menu=self.supliermenu)
@@ -442,6 +442,22 @@ class mainWindow:
 			print(self.cartbarcode)
 			print(self.cartquantity)
 			print("-------------")
+
+			self.rewardsNumber = 0
+			self.accountsNumber = 0
+			self.transType = "cash"
+			self.transDate = self.widgetsVar.dateEntry.get()
+
+			c.execute("INSERT INTO transactionPointer (transID, employeeNumber, totalcost, transdate, transtype, rewardsnum, accountnum) VALUES (?, ?, ?, ?, ?, ?, ?)", ([self.widgetsVar.salesEntry.get(), self.employee, self.totalPrice, self.transDate, self.transType, self.rewardsNumber,self.accountsNumber]))
+
+			self.i =0
+			while self.i <len(self.cartbarcode):
+				c.execute("INSERT INTO transactionList (transID, barcode, quantity, price) VALUES (?, ?, ?, ?)", ([self.widgetsVar.salesEntry.get(), self.cartbarcode[self.i], self.cartquantity[self.i], self.cartPrice[self.i]]))
+
+				self.i = self.i +1
+
+			conn.commit()
+
 			self.cartbarcode = []
 			self.cartquantity = []
 			self.totalPrice = 0
@@ -624,8 +640,6 @@ class mainWindow:
 		else:
 			print("Feature DISABLED")
 
-
-
 	def getSettingsState(self, settingName):
 		c.execute("SELECT value FROM settings WHERE settingName = ?", [settingName])
 		self.settingState = c.fetchone()
@@ -640,7 +654,9 @@ class mainWindow:
 		else:
 			return self.settingState
 
-	
+	def openSettings(self, master):
+		settingsWindow = settingsWindowClass(master)
+
 
 class loginWindowClass:
 	def __init__(self, master):
@@ -747,6 +763,23 @@ class helpWindowClass:
 	def helpWindowDestroy(self):
 		self.helpWindow.destroy()
 
+class settingsWindowClass:
+	def __init__(self, master):
+		self.helpWindow = Toplevel(master)
+		self.master=master
+		self.helpWindow.title("Settings")
+		self.helpWindow.geometry("500x500")
+		self.helpWindow.resizable(height = False, width = False)
+
+
+		
+
+		
+		self.helpWindow.bind("<KP_Enter>", lambda i: self.helpWindowDestroy())
+
+	def helpWindowDestroy(self):
+		self.helpWindow.destroy()
+
 
 def insertSetting(settingName, value):
 	c.execute('SELECT settingName FROM settings WHERE settingName = ?', [settingName])
@@ -771,8 +804,6 @@ def isWeighed(barcode):
 			return tempVar
 		
 
-
-
 def start():
 	x =1 
 	global voidmode
@@ -780,7 +811,8 @@ def start():
 	c.execute('CREATE TABLE IF NOT EXISTS allItemsAndCodes(barcode TEXT, description TEXT, price REAL, priceIncrement INT, quantityInStock REAL, itemType INT)')
 	c.execute('CREATE TABLE IF NOT EXISTS employees(firstName TEXT, lastName TEXT, employeeNumber TEXT, email TEXT, phone TEXT, address TEXT, dob TEXT, mgr TEXT)')
 	c.execute('CREATE TABLE IF NOT EXISTS settings(settingName TEXT, value INT)')
-
+	c.execute('CREATE TABLE IF NOT EXISTS transactionPointer(transID TEXT, employeeNumber TEXT, totalcost REAL, transdate TEXT, transtype TEXT, rewardsnum TEXT, accountnum TEXT)')
+	c.execute('CREATE TABLE IF NOT EXISTS transactionList(transID TEXT, barcode TEXT, quantity REAL, price REAL)')
 	insertSetting("Default Employee Number", 1)
 	insertSetting("Sales Count", 1)
 	insertSetting("Enable Lookup", 1)

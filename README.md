@@ -1,14 +1,13 @@
 # Perkins-POS
 A point of dale software. Still in testing stage
 
- Current Version: PerkinsPOSTest-2.5
+ Current Version: PerkinsPOSTest-2.6
 
 
 
- 2.5 Uptades:
-- Fixed issues change quantity and change price
-- Items will disappear when quantity is changed to 0
-
+ 2.6 Uptades:
+- Added transaction database
+- Created settings window accessible from menu bar. Not yet functional.
 
 
 
