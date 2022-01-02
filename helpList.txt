@@ -8,5 +8,6 @@ The screen should reset and show you the change back.
 
 Type 000 and then hit enter to logout and close the POS
 Type 000000 and then hit enter to come back to this page.
+Type 000000000 and then hit enter to open the setting page. Settings page will only open if you are a manager.
 
 Press Enter to Exit Help Page

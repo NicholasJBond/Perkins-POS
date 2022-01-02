@@ -5,9 +5,9 @@ A point of dale software. Still in testing stage
 
 
 
- 2.6 Uptades:
-- Added transaction database
-- Created settings window accessible from menu bar. Not yet functional.
+ 2.7 Uptades:
+- Added ability to change the settings
+- Access the settings through menu bar or doing 000000000 return.
 
 
 

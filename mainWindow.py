@@ -2,15 +2,17 @@ from tkinter import *
 import sqlite3
 import time as tm
 import sys
+from PIL import Image, ImageTk
 
 conn = sqlite3.connect('PerkinPOSDatabase')
 c= conn.cursor()
 global companyName
 global focus
 global enterCount
-companyName = "POS Test 2.5"
+companyName = "POS Test 2.7"
 focus = 0
 enterCount = 0
+amount_of_settings = 4
 
 class mainWindow:
 
@@ -164,7 +166,7 @@ class mainWindow:
 
 			self.displayTimeAndDate()
 
-			self.logoutButton = Button(text="Logout", font=("Arial", 45), height = 3, width =6, command=lambda i =self, j=master:mainWindow.logout(i, j))
+			self.logoutButton = Button(text="Logout:\nEnter\n000", font=("Arial", 45), height = 3, width =6, command=lambda i =self, j=master:mainWindow.logout(i, j))
 			self.logoutButton.place(anchor=SW, relx = 0.875, rely = 0.99)
 
 			self.subtotal=Entry(master, font=("Arial", 30), width=11)
@@ -271,8 +273,10 @@ class mainWindow:
 
 	def logout(self, master):
 		master.destroy()
+		return False
 
 	def bindReturn(self, master):
+
 		
 		self.priceList = self.widgetsVar.listboxPrice
 		self.itemList = self.widgetsVar.listboxDescription
@@ -283,6 +287,12 @@ class mainWindow:
 
 		elif self.widgetsVar.inputEntry.get() == "000000":
 			self.helpWindow = helpWindowClass(self.master)
+			
+
+			self.widgetsVar.inputEntry.delete(0, END)
+
+		elif self.widgetsVar.inputEntry.get() == "000000000":
+			self.Settings = settingsWindowClass(self.master)
 			
 
 			self.widgetsVar.inputEntry.delete(0, END)
@@ -664,7 +674,15 @@ class loginWindowClass:
 		self.master=master
 		self.loginWindow.title("Login")
 		self.loginWindow.geometry("500x500")
-		self.loginWindow.resizable(height = False, width = False)
+		self.loginWindow.resizable(height = True, width = True)
+
+		self.canvas=Canvas(self.loginWindow, width=350, height =100)
+		self.canvas.place(anchor=CENTER, relx = 0.5, rely = 0.15)
+		self.img = (Image.open("logo.png"))
+		self.resized_image= self.img.resize((350,100))
+		self.img = ImageTk.PhotoImage(self.resized_image)
+
+		self.canvas.create_image(0, 0, anchor=NW, image =self.img)
 
 		self.label1=Label(self.loginWindow, text="Enter Employee Number", font=("Arial", 20))
 		self.label1.place(anchor=CENTER, relx = 0.5, rely=0.3)
@@ -680,26 +698,35 @@ class loginWindowClass:
 		self.destroyLogin = Button(self.loginWindow, text="EXIT",font=("Arial, 25"), command=lambda i=master: self.close(i))
 		self.destroyLogin.place(anchor=CENTER, relx=0.5, rely=0.9)
 
+		self.noEmployee = Label(self.loginWindow, text = "", fg='red', font=("Arial", 25))
+		self.noEmployee.place(anchor=CENTER, relx=0.5, rely=0.6)
+
 		self.loginWindow.bind("<Return>", lambda i=master, j=self.entry1:self.login(i, j))
 		self.loginWindow.bind("<KP_Enter>", lambda i=master, j=self.entry1:self.login(i, j))
 		self.employeenum=5
 
+
+
+
 		
 
 	def login(self, master, entryInputs):
-		if entryInputs.get() == "000":
+		if self.entry1.get() == "000":
 				self.close(master)
 		
 		c.execute('SELECT * FROM settings WHERE settingName = ?', ["Default Employee Number"])
-		if c.fetchone() == 0:
+		self.a = c.fetchone()
+		print(self.a[1])
+		if self.a[1] == 1:
 
-			c.execute('SELECT * FROM employees WHERE employeeNumber = ?', [entryInputs.get()])
+			c.execute('SELECT * FROM employees WHERE employeeNumber = ?', [self.entry1.get()])
 			self.dbFetch = c.fetchone()
 			
 
-			if self.dbFetch ==None:
+			if self.dbFetch == None:
 				print("No Such Employee")
-				entryInputs.delete(0, END)
+				self.noEmployee.config(text = "No Such Employee")
+				self.entry1.delete(0, END)
 
 
 
@@ -712,27 +739,96 @@ class loginWindowClass:
 				self.entry.focus()
 				
 				self.employeenum=self.dbFetch[0]+" "+self.dbFetch[1][0]
+				self.mgr = self.dbFetch[7]
 				mainWindowwindow.widgetsVar.employeeEntry.config(state=NORMAL)
 				mainWindowwindow.widgetsVar.employeeEntry.delete(0, END)
 
 				mainWindowwindow.widgetsVar.employeeEntry.insert(0, self.employeenum)
 				mainWindowwindow.widgetsVar.employeeEntry.config(state=DISABLED)
 
+				mainWindowwindow.widgetsVar.managerEntry.config(state=NORMAL)
+				mainWindowwindow.widgetsVar.managerEntry.delete(0, END)
+
+				mainWindowwindow.widgetsVar.managerEntry.insert(0, self.isManger(self.dbFetch[7]))
+				mainWindowwindow.widgetsVar.managerEntry.config(state=DISABLED)
+
+
+
 			
 		else:
-			
-			self.loginWindow.destroy()
-			self.master.deiconify()
-			self.master.attributes('-fullscreen',True)
-			self.entry = mainWindowwindow.widgetsVar.inputEntry
-			self.entry.focus()
-			
-			self.employeenum=000000
-			mainWindowwindow.widgetsVar.employeeEntry.config(state=NORMAL)
-			mainWindowwindow.widgetsVar.employeeEntry.delete(0, END)
 
-			mainWindowwindow.widgetsVar.employeeEntry.insert(0, self.employeenum)
-			mainWindowwindow.widgetsVar.employeeEntry.config(state=DISABLED)
+			c.execute('SELECT employeeNumber FROM employees WHERE mgr = 1')
+			self.dbFetch = c.fetchone()
+			if self.dbFetch == None:
+				print("Non-Error: No employee with manager permissions set up")
+			
+				self.loginWindow.destroy()
+				self.master.deiconify()
+				self.master.attributes('-fullscreen',True)
+				self.entry = mainWindowwindow.widgetsVar.inputEntry
+				self.entry.focus()
+				
+				self.employeenum="None"
+				self.mgr = "Yes"
+				mainWindowwindow.widgetsVar.employeeEntry.config(state=NORMAL)
+				mainWindowwindow.widgetsVar.employeeEntry.delete(0, END)
+
+				mainWindowwindow.widgetsVar.employeeEntry.insert(0, self.employeenum)
+				mainWindowwindow.widgetsVar.employeeEntry.config(state=DISABLED)
+
+				mainWindowwindow.widgetsVar.managerEntry.config(state=NORMAL)
+				mainWindowwindow.widgetsVar.managerEntry.delete(0, END)
+
+				mainWindowwindow.widgetsVar.managerEntry.insert(0, self.mgr)
+				mainWindowwindow.widgetsVar.managerEntry.config(state=DISABLED)
+
+			else:
+				self.dbFetch = self.dbFetch[0]
+				if self.entry1.get() == self.dbFetch:
+
+					self.loginWindow.destroy()
+					self.master.deiconify()
+					self.master.attributes('-fullscreen',True)
+					self.entry = mainWindowwindow.widgetsVar.inputEntry
+					self.entry.focus()
+					
+					self.employeenum="None"
+					self.mgr = "Yes"
+					mainWindowwindow.widgetsVar.employeeEntry.config(state=NORMAL)
+					mainWindowwindow.widgetsVar.employeeEntry.delete(0, END)
+
+					mainWindowwindow.widgetsVar.employeeEntry.insert(0, self.employeenum)
+					mainWindowwindow.widgetsVar.employeeEntry.config(state=DISABLED)
+
+					mainWindowwindow.widgetsVar.managerEntry.config(state=NORMAL)
+					mainWindowwindow.widgetsVar.managerEntry.delete(0, END)
+
+					mainWindowwindow.widgetsVar.managerEntry.insert(0, self.mgr)
+					mainWindowwindow.widgetsVar.managerEntry.config(state=DISABLED)
+
+				else:
+					self.loginWindow.destroy()
+					self.master.deiconify()
+					self.master.attributes('-fullscreen',True)
+					self.entry = mainWindowwindow.widgetsVar.inputEntry
+					self.entry.focus()
+					
+					self.employeenum="None"
+					self.mgr = "No"
+					mainWindowwindow.widgetsVar.employeeEntry.config(state=NORMAL)
+					mainWindowwindow.widgetsVar.employeeEntry.delete(0, END)
+
+					mainWindowwindow.widgetsVar.employeeEntry.insert(0, self.employeenum)
+					mainWindowwindow.widgetsVar.employeeEntry.config(state=DISABLED)
+
+					mainWindowwindow.widgetsVar.managerEntry.config(state=NORMAL)
+					mainWindowwindow.widgetsVar.managerEntry.delete(0, END)
+
+					mainWindowwindow.widgetsVar.managerEntry.insert(0, self.mgr)
+					mainWindowwindow.widgetsVar.managerEntry.config(state=DISABLED)
+
+
+
 			
 
 
@@ -740,6 +836,16 @@ class loginWindowClass:
 
 	def close(self, master):
 		sys.exit()
+
+	def isManger(self, inputa):
+		
+		if inputa == "1":
+			
+			return "Yes"
+
+		else:
+			
+			return "No"
 
 class helpWindowClass:
 	def __init__(self, master):
@@ -765,20 +871,294 @@ class helpWindowClass:
 
 class settingsWindowClass:
 	def __init__(self, master):
-		self.helpWindow = Toplevel(master)
-		self.master=master
-		self.helpWindow.title("Settings")
-		self.helpWindow.geometry("500x500")
-		self.helpWindow.resizable(height = False, width = False)
+		if mainWindowwindow.widgetsVar.managerEntry.get() == "Yes":
+
+			self.SettingsWindow = Toplevel(master)
+			self.master=master
+			self.SettingsWindow.title("Settings")
+			self.SettingsWindow.geometry("500x500")
+			self.SettingsWindow.resizable(height = False, width = False)
+
+			self.title = Label(self.SettingsWindow, text = "Settings", font = ("Arial", 75))
+			self.title.place(anchor=CENTER, relx=0.5, rely = 0.05)
+			self.search = Entry(self.SettingsWindow, width = 45, font=("Arial", 25))
+			self.search.place(anchor=NW, relx=0.01, rely=0.15)
+			self.search.focus()
+
+			self.frame = LabelFrame(self.SettingsWindow, text = "Type setting number to modify", font=("Arial", 30))
+			self.frame.place(anchor=NW, relx = 0.01, rely = 0.22)
+
+			self.info = Label(self.frame, text="Actions Appear Here", font=("Arial", 25))
+			self.info.pack(anchor = W)
 
 
-		
+			Label(self.SettingsWindow, text="#", font = ('Arial', 15)).place(anchor=NW, relx = 0.59975, rely = 0.1275)
+			Label(self.SettingsWindow, text="Setting Name", font = ('Arial', 15)).place(anchor=NW, relx = 0.61225, rely = 0.1275)
+			Label(self.SettingsWindow, text="Value", font = ('Arial', 15)).place(anchor=NW, relx = 0.786, rely = 0.1275)
+			Label(self.SettingsWindow, text="/", font = ('Arial', 15)).place(anchor=NW, relx = 0.8145, rely = 0.1275)
+			Label(self.SettingsWindow, text="*", font = ('Arial', 15)).place(anchor=NW, relx = 0.843, rely = 0.1275)
+			Label(self.SettingsWindow, text="-", font = ('Arial', 15)).place(anchor=NW, relx = 0.8715, rely = 0.1275)
+			Label(self.SettingsWindow, text='+', font = ('Arial', 15)).place(anchor=NW, relx = 0.9, rely = 0.1275)
 
-		
-		self.helpWindow.bind("<KP_Enter>", lambda i: self.helpWindowDestroy())
+
+			Label(self.SettingsWindow, text='Press Enter to Exit the Settings', font = ('Arial', 30)).place(anchor=CENTER, relx = 0.5, rely = 0.85)
+
+			self.settingsName = Listbox(self.SettingsWindow, width=32, font=("Arial", 15), height = amount_of_settings)
+			self.settingsName.place(anchor=NW, relx = 0.61225, rely=0.15)
+			self.settingsValue = Listbox(self.SettingsWindow, width=5, font=("Arial", 15), height = amount_of_settings)
+			self.settingsValue.place(anchor=NW, relx = 0.786, rely=0.15)
+			self.settingsNumber = Listbox(self.SettingsWindow, width=2, font=("Arial", 15), height = amount_of_settings)
+			self.settingsNumber.place(anchor=NW, relx = 0.59975, rely=0.15)
+			self.settingsDivide= Listbox(self.SettingsWindow, width=5, font=("Arial", 15), height = amount_of_settings)
+			self.settingsDivide.place(anchor=NW, relx = 0.8145, rely=0.15)
+			self.settingsMultiply = Listbox(self.SettingsWindow, width=5, font=("Arial", 15), height = amount_of_settings)
+			self.settingsMultiply.place(anchor=NW, relx = 0.843, rely=0.15)
+			self.settingsMinus = Listbox(self.SettingsWindow, width=5, font=("Arial", 15), height = amount_of_settings)
+			self.settingsMinus.place(anchor=NW, relx = 0.8715, rely=0.15)
+			self.settingsAdd = Listbox(self.SettingsWindow, width=5, font=("Arial", 15), height = amount_of_settings)
+			self.settingsAdd.place(anchor=NW, relx = 0.9, rely=0.15)
+			
+			c.execute("SELECT value FROM settings")
+			self.dbFetch = c.fetchall()
+			
+
+			self.pass_in_colours("1", "Require Employee Number", self.valtobool(self.dbFetch[0][0])[0], "", "", "", "", self.valtobool(self.dbFetch[0][0])[1], 'blue', 'blue', 'blue', 'blue')
+			self.pass_in_colours("2", "Reset Sales Count", self.dbFetch[1][0], "", "", "", "", 'orange', 'blue', 'blue', 'blue', 'blue')
+			self.pass_in_colours("3", "Enable Lookup",self.valtobool(self.dbFetch[2][0])[0], "", "", "", "", self.valtobool(self.dbFetch[2][0])[1], 'blue', 'blue', 'blue', 'blue')
+			self.pass_in_colours("4", "Destroy Trans On Logout", self.valtobool(self.dbFetch[3][0])[0], "", "", "", "", self.valtobool(self.dbFetch[3][0])[1], 'blue', 'blue', 'blue', 'blue')
+
+			self.SettingsWindow.bind("<KeyRelease>", lambda i : self.releaseKey())
+			self.SettingsWindow.bind("<KP_Enter>", lambda i: self.helpWindowDestroy())
+
+
+
+		else:
+			pass
+
+	def valtobool(self, val):
+		if val == 1:
+			return ['True', 'green']
+
+		elif val == 0:
+			return ['False', 'red']
+
+		else:
+			return ['', 'blue']
+
+	def pass_in_colours(self, num, name, val, div, mult, minus, add, valcol, divcol, multcol, mincol, addcol):
+		self.settingsName.insert(END, name)
+		self.settingsValue.insert(END, val)
+		self.settingsValue.itemconfig(0, fg = 'white')
+		self.settingsNumber.insert(END, num)
+		self.settingsDivide.insert(END, div)
+		self.settingsMultiply.insert(END, mult)
+		self.settingsMinus.insert(END, minus)
+		self.settingsAdd.insert(END, add)
+		self.settingsValue.itemconfig(END, bg=valcol)
+		self.settingsAdd.itemconfig(END, bg=addcol)
+		self.settingsMinus.itemconfig(END, bg=mincol)
+		self.settingsDivide.itemconfig(END, bg=divcol)
+		self.settingsMultiply.itemconfig(END, bg=multcol)
+		self.settingsValue.itemconfig(END, fg = 'white')
+
+
+
 
 	def helpWindowDestroy(self):
-		self.helpWindow.destroy()
+		c.execute("SELECT value FROM settings WHERE settingName = 'Sales Count'")
+		self.sales_count = c.fetchone()
+		self.sales_count = self.sales_count[0]
+
+		mainWindowwindow.widgetsVar.salesEntry.config(state = NORMAL)
+		mainWindowwindow.widgetsVar.salesEntry.delete(0, END)
+		mainWindowwindow.widgetsVar.salesEntry.insert(0, self.sales_count)
+		mainWindowwindow.widgetsVar.salesEntry.config(state = DISABLED)
+		self.SettingsWindow.destroy()
+
+	def check_int(self, check_int):
+		try:
+
+			a = int(check_int)
+
+			return True
+
+		except:
+			return False
+
+	def releaseKey(self):
+		
+		
+
+		self.input = str(self.search.get())
+
+
+		#Setting one
+		
+		if self.input == "1":
+			self.frame.config(text="Options for setting: Require Employee Number")
+			self.info.config(anchor = W, text="When set to true an employee number is required to open POS\nWhen set to false no employee number is required\n/ :sets to true\n* :sets to false")
+
+		elif self.input == "1/":
+			
+			self.frame.config(text="Type setting number to modify")
+			self.info.config(text="Actions Appear Here")
+
+
+			c.execute('SELECT employeeNumber FROM employees WHERE mgr = 1')
+			self.dbFetch = c.fetchone()
+			if self.dbFetch == None:
+
+				print("Non-Error: No employee with manager permissions set up. Manager attribute is required to set 'Require Employee Number' to true.")
+			else:
+
+
+				c.execute("UPDATE settings SET value = 1 WHERE settingName = 'Default Employee Number'")
+				conn.commit()
+
+
+				
+				self.settingsValue.delete(0)
+				self.settingsValue.insert(0, "True")
+				self.settingsValue.itemconfig(0, bg = 'green')
+				self.settingsValue.itemconfig(0, fg = 'white')
+
+
+
+			self.search.delete(0, END)
+
+			
+		elif self.input == "1*":
+			self.frame.config(text="Type setting number to modify")
+			self.info.config(text="Actions Appear Here")
+
+			c.execute("UPDATE settings SET value = 0 WHERE settingName = 'Default Employee Number'")
+			conn.commit()
+			
+			self.settingsValue.delete(0)
+			self.settingsValue.insert(0, "False")
+			self.settingsValue.itemconfig(0, bg = 'red')
+			self.settingsValue.itemconfig(0, fg = 'white')
+			self.search.delete(0, END)
+
+		# Setting two
+		elif self.input == "2":
+			self.frame.config(text="Options for setting: Reset Sales Count")
+			self.info.config(text="/: Resets the sales count to 0. Don't do this unless POS is new")
+
+		elif self.input == "2/":
+			self.frame.config(text="Type setting number to modify")
+			self.info.config(text="Actions Appear Here")
+
+			c.execute("UPDATE settings SET value = 0 WHERE settingName = 'Sales Count'")
+			conn.commit()
+			c.execute("DROP table transactionPointer")
+			c.execute("DROP table transactionList")
+			c.execute('CREATE TABLE IF NOT EXISTS transactionPointer(transID TEXT, employeeNumber TEXT, totalcost REAL, transdate TEXT, transtype TEXT, rewardsnum TEXT, accountnum TEXT)')
+			c.execute('CREATE TABLE IF NOT EXISTS transactionList(transID TEXT, barcode TEXT, quantity REAL, price REAL)')
+
+
+
+			self.settingsValue.delete(1)
+			self.settingsValue.insert(1, "0")
+			self.settingsValue.itemconfig(1, bg = 'orange')
+			self.settingsValue.itemconfig(1, fg = 'white')
+
+
+
+
+
+
+			self.search.delete(0, END)
+
+
+
+		# Setting three
+
+		elif self.input == "3":
+			self.frame.config(text="Options for setting: Enable Lookup")
+			self.info.config(text="When set to true, users can look up the price, name and\n quantity in stock of a specific item by entering the barcode and then hitting \nthe + symbol.\n/ : sets to true\n* : sets to false")
+
+		elif self.input == "3/":
+			self.frame.config(text="Type setting number to modify")
+			self.info.config(text="Actions Appear Here")
+
+			c.execute("UPDATE settings SET value = 1 WHERE settingName = 'Enable Lookup'")
+			conn.commit()
+
+			self.settingsValue.delete(2)
+			self.settingsValue.insert(2, "True")
+			self.settingsValue.itemconfig(2, bg = 'green')
+			self.settingsValue.itemconfig(2, fg = 'white')
+
+			self.search.delete(0, END)
+
+		elif self.input == "3*":
+			self.frame.config(text="Type setting number to modify")
+			self.info.config(text="Actions Appear Here")
+
+			c.execute("UPDATE settings SET value = 0 WHERE settingName = 'Enable Lookup'")
+			conn.commit()
+
+			self.settingsValue.delete(2)
+			self.settingsValue.insert(2, "False")
+			self.settingsValue.itemconfig(2, bg = 'red')
+			self.settingsValue.itemconfig(2, fg = 'white')
+
+
+			self.search.delete(0, END)
+
+
+
+
+		elif self.input == "4":
+			self.frame.config(text="Options for setting: Destroy Trans On Logout")
+			self.info.config(text="When set to true, the transaction will be canceled upon logout. \nAll items in the cart list will be removed.\n/ : sets to true\n* : sets to false(not yet Implemented)")
+
+		elif self.input == "4/":
+			self.frame.config(text="Type setting number to modify")
+			self.info.config(text="Actions Appear Here")
+
+			c.execute("UPDATE settings SET value = 1 WHERE settingName = 'Destroy Trans On Logout'")
+			conn.commit()
+
+			self.settingsValue.delete(3)
+			self.settingsValue.insert(3, "True")
+			self.settingsValue.itemconfig(3, bg = 'green')
+			self.settingsValue.itemconfig(3, fg = 'white')
+
+
+			self.search.delete(0, END)
+
+
+		elif self.input == "4*":
+			self.frame.config(text="Type setting number to modify")
+			self.info.config(text="Actions Appear Here")
+
+			c.execute("UPDATE settings SET value = 1 WHERE settingName = 'Destroy Trans On Logout'")
+			conn.commit()
+
+			self.settingsValue.delete(3)
+			self.settingsValue.insert(3, "True")
+			self.settingsValue.itemconfig(3, bg = 'green')
+			self.settingsValue.itemconfig(3, fg = 'white')
+
+
+			self.search.delete(0, END)
+
+			
+
+		else:
+
+			self.frame.config(text="Type setting number to modify")
+			self.info.config(text="Actions Appear Here")
+
+
+
+
+
+
+
+		return True
 
 
 def insertSetting(settingName, value):
@@ -804,6 +1184,7 @@ def isWeighed(barcode):
 			return tempVar
 		
 
+
 def start():
 	x =1 
 	global voidmode
@@ -813,13 +1194,14 @@ def start():
 	c.execute('CREATE TABLE IF NOT EXISTS settings(settingName TEXT, value INT)')
 	c.execute('CREATE TABLE IF NOT EXISTS transactionPointer(transID TEXT, employeeNumber TEXT, totalcost REAL, transdate TEXT, transtype TEXT, rewardsnum TEXT, accountnum TEXT)')
 	c.execute('CREATE TABLE IF NOT EXISTS transactionList(transID TEXT, barcode TEXT, quantity REAL, price REAL)')
-	insertSetting("Default Employee Number", 1)
+	insertSetting("Default Employee Number", 0)
 	insertSetting("Sales Count", 1)
 	insertSetting("Enable Lookup", 1)
+	insertSetting("Destroy Trans On Logout", 1)
 
 
 	root = Tk()
-	voidmode = IntVar()
+	
 	
 	
 	root.withdraw()
