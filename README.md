@@ -1,7 +1,7 @@
 # Perkins-POS
 A point of dale software. Still in testing stage
 
- Current Version: PerkinsPOSTest-2.6
+ Current Version: PerkinsPOSTest-2.7
 
 
 
